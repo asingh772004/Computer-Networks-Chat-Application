@@ -42,7 +42,7 @@ bool isExit(string s)
     int n = s.length();
     int space = s.find_first_of(' ');
     s = s.substr(0, space);
-    return (s == "/exit");
+    return (s == "DISCONNECT");
 }
 
 void client_Alias(int sock, char *buffer)
