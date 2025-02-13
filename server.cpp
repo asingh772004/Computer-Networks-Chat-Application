@@ -16,7 +16,8 @@ using namespace std;
 #define MAX_CLIENTS 5
 int client_count = 0;
 pthread_mutex_t client_count_mutex = PTHREAD_MUTEX_INITIALIZER;
-map<string, int> Aliases;
+map<int, string> Client_List;
+map<string, int> Chat_Room;
 
 void error(char *msg)
 {
@@ -55,10 +56,23 @@ takename:
     Nrec = read(sock, buffer, 255);
     if (Nrec <= 0)
         goto takename;
-    name = buffer;
-    if (Aliases.find(name) != Aliases.end())
-        goto takename;
-    Aliases[name] = sock;
+    for (auto it : Client_List)
+    {
+        if (it.second == name)
+        {
+            Nsend = write(sock, "Alias already taken.", 16);
+            goto takename;
+        }
+    }
+    Client_List[sock] = name;
+}
+
+void join_Chat(int sock, char *buffer)
+{
+    ssize_t Nsend;
+    bzero(buffer, 256);
+    buffer = (char *)Client_List[sock][0] + " has joined the chat";
+    Nsend = write(sock, buffer, 16);
 }
 
 void *handleClient(void *socket_desc)
