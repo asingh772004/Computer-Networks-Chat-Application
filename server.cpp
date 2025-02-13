@@ -16,6 +16,7 @@ using namespace std;
 #define MAX_CLIENTS 5
 int client_count = 0;
 pthread_mutex_t client_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+map<string, int> Aliases;
 
 void error(char *msg)
 {
@@ -43,12 +44,30 @@ bool isExit(string s)
     return (s == "/exit");
 }
 
+void client_Alias(int sock, char *buffer)
+{
+
+    ssize_t Nrec, Nsend;
+    string name;
+    bzero(buffer, 256);
+takename:
+    Nsend = write(sock, "Enter Alias:", 16);
+    Nrec = read(sock, buffer, 255);
+    if (Nrec <= 0)
+        goto takename;
+    name = buffer;
+    if (Aliases.find(name) != Aliases.end())
+        goto takename;
+    Aliases[name] = sock;
+}
+
 void *handleClient(void *socket_desc)
 {
     int sock = *(int *)socket_desc;
     char buffer[256];
     string message;
     ssize_t Nrec, Nsend;
+    client_Alias(sock, buffer);
     while (1)
     {
         bzero(buffer, 256);
