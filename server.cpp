@@ -32,8 +32,9 @@ pthread_mutex_t chatRoomMutex = PTHREAD_MUTEX_INITIALIZER;
 map<int, string> clientList;
 map<string, int> chatRoom;
 
-void print(int number){
-    cout<<"Hello "<<number<<endl;
+void print(int number)
+{
+    cout << "Hello " << number << endl;
     return;
 }
 
@@ -208,6 +209,7 @@ void privateMessage(vector<int> &sockReceiver, char *msg)
         }
     }
     print(4);
+    return;
 }
 
 void broadcast(int sockSender, char *message)
@@ -225,6 +227,7 @@ void broadcast(int sockSender, char *message)
         }
     }
     print(5);
+    return;
 }
 
 void globalChat(char *message)
@@ -239,6 +242,7 @@ void globalChat(char *message)
         }
     }
     print(6);
+    return;
 }
 
 // to be added : Users Not Present char* message maker
@@ -269,6 +273,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
         /*error */
     }
     print(8);
+    return;
 }
 
 void chatting(int sockSender, char *buffer)
@@ -310,6 +315,7 @@ void chatting(int sockSender, char *buffer)
         }
     }
     print(9);
+    return;
 }
 
 void clientAlias(int socketNumber, char *buffer)
@@ -332,6 +338,7 @@ takename:
     }
     clientList[socketNumber] = name;
     print(10);
+    return;
 }
 
 void *handleClient(void *socketDescription)
@@ -368,6 +375,7 @@ void *handleClient(void *socketDescription)
     pthread_mutex_unlock(&clientCountMutex);
     pthread_exit(NULL);
     print(11);
+    return;
 }
 
 int main(int argc, char *argv[])
@@ -411,7 +419,8 @@ int main(int argc, char *argv[])
         }
         clientCount++;
         pthread_mutex_unlock(&clientCountMutex);
-        pthread_create(&clientThread, NULL, handleClient, (void *)serverObject.connfd);
+        int *newSock = new int(serverObject.connfd);
+        pthread_create(&clientThread, NULL, handleClient, (void *)newSock);
         pthread_detach(clientThread); // to free resources on client termination
     }
     serverObject.closeServer(serverObject.sockfd);
