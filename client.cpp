@@ -25,7 +25,6 @@ void error(const char *msg)
     exit(1);
 }
 
-
 void receive_handler(char *buffer)
 {
     string message(buffer);
@@ -39,7 +38,6 @@ void receive_handler(char *buffer)
         cout << RED << " " << message.substr(1) << " " << RESET << endl;
     }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -75,15 +73,27 @@ int main(int argc, char *argv[])
     {
         error("ERROR connecting");
     }
-    
-      bzero(buffer, 256);
-        ssize_t n = read(sockfd, buffer, 255);
-        if (n < 0)
-        {
-            error("ERROR reading from socket");
-        }
-        receive_handler(buffer);
-         bzero(buffer, 256);
+
+    bzero(buffer, 256);
+    ssize_t n = read(sockfd, buffer, 255);
+    if (n < 0)
+    {
+        error("ERROR reading from socket");
+    }
+    receive_handler(buffer);
+    bzero(buffer, 256);
+    fgets(buffer, 255, stdin);
+    cout << YELLOW << " : YOU \n"
+         << RESET;
+    n = write(sockfd, buffer, strlen(buffer));
+    if (n < 0)
+    {
+        error("ERROR writing to socket");
+    }
+
+    while (true)
+    {
+        bzero(buffer, 256);
         fgets(buffer, 255, stdin);
         cout << YELLOW << " : YOU \n"
              << RESET;
@@ -91,27 +101,15 @@ int main(int argc, char *argv[])
         if (n < 0)
         {
             error("ERROR writing to socket");
-        }  
-        
-        
-        while(true)
+        }
+        bzero(buffer, 256);
+        n = read(sockfd, buffer, 255);
+        if (n < 0)
         {
-           bzero(buffer, 256);
-      	   fgets(buffer, 255, stdin);
-           cout << YELLOW << " : YOU \n"<< RESET;
-           n = write(sockfd, buffer, strlen(buffer));
-           if (n < 0)
-      	   {
-            error("ERROR writing to socket");
-       	   }  
-       	    bzero(buffer, 256);
-            n = read(sockfd, buffer, 255);
-      	  if (n < 0)
-      	  {
             error("ERROR reading from socket");
-      	  }
+        }
         receive_handler(buffer);
-        }     
+    }
     close(sockfd);
     return 0;
 }
