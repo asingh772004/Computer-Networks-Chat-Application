@@ -199,13 +199,15 @@ msgType commandHandler(string &message, int sock_sender, vector<int> &privateSoc
 void Chatting(int sock_sender, char *buffer)
 {
     ssize_t n_send, n_rec;
-    vector<int> privateSocketNo;
     string message;
     msgType command;
+    vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
     bool disconnectFlag = false;
     while (!disconnectFlag)
     {
+        privateSocketNo.clear();
+        privateAliasNotFound.clear();
         n_rec = read(sock_sender, buffer, 256);
         message = buffer;
         command = commandHandler(message, sock_sender, privateSocketNo, privateAliasNotFound);
