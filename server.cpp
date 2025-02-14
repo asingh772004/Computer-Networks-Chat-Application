@@ -32,6 +32,11 @@ pthread_mutex_t chatRoomMutex = PTHREAD_MUTEX_INITIALIZER;
 map<int, string> clientList;
 map<string, int> chatRoom;
 
+void print(int number){
+    cout<<"Hello "<<number<<endl;
+    return;
+}
+
 class server
 {
 public:
@@ -131,6 +136,7 @@ char *msgParser(msgType command, string message, int sockSender)
 
     char *dynamicMsg = new char[msg.size() + 1];
     strcpy(dynamicMsg, msg.c_str());
+    print(1);
     return dynamicMsg;
 }
 
@@ -160,6 +166,7 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
     }
 
     message = message.substr(index);
+    print(2);
     return;
 }
 
@@ -185,7 +192,7 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
         message = message.substr(10);
         return command;
     }
-
+    print(3);
     return command;
 }
 
@@ -200,6 +207,7 @@ void privateMessage(vector<int> &sockReceiver, char *msg)
             /*error */
         }
     }
+    print(4);
 }
 
 void broadcast(int sockSender, char *message)
@@ -216,6 +224,7 @@ void broadcast(int sockSender, char *message)
             }
         }
     }
+    print(5);
 }
 
 void globalChat(char *message)
@@ -229,6 +238,7 @@ void globalChat(char *message)
             /*error */
         }
     }
+    print(6);
 }
 
 // to be added : Users Not Present char* message maker
@@ -245,6 +255,7 @@ char *notPresentMsg(vector<string> &privateAliasNotFound)
     msg += "were not found in the Chat Room.";
     char *dynamicMsg = new char[msg.size() + 1];
     strcpy(dynamicMsg, msg.c_str());
+    print(7);
     return dynamicMsg;
 }
 
@@ -257,6 +268,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
     {
         /*error */
     }
+    print(8);
 }
 
 void chatting(int sockSender, char *buffer)
@@ -297,6 +309,7 @@ void chatting(int sockSender, char *buffer)
             break;
         }
     }
+    print(9);
 }
 
 void clientAlias(int socketNumber, char *buffer)
@@ -318,6 +331,7 @@ takename:
         }
     }
     clientList[socketNumber] = name;
+    print(10);
 }
 
 void *handleClient(void *socketDescription)
@@ -353,6 +367,7 @@ void *handleClient(void *socketDescription)
     clientCount--;
     pthread_mutex_unlock(&clientCountMutex);
     pthread_exit(NULL);
+    print(11);
 }
 
 int main(int argc, char *argv[])
