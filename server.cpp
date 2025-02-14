@@ -278,6 +278,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 
 void chatting(int sockSender, char *buffer)
 {
+    cout << "Chat Room accessed" << endl;
     ssize_t n_send, n_rec;
     string message;
     msgType command;
@@ -354,9 +355,14 @@ void *handleClient(void *socketDescription)
     string message;
     ssize_t receivedByteSize, sentByteSize;
     clientAlias(socketNumber, buffer);
+
     cout << "Running Server Loop" << endl;
+
     while (true)
     {
+
+        cout << "In the loop" << endl;
+
         bzero(buffer, BUFFER_BYTES);
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         if (receivedByteSize < 0)
@@ -364,8 +370,14 @@ void *handleClient(void *socketDescription)
             continue;
         }
         message = buffer;
-        if (message == "CONNECT")
+
+        sentByteSize = write(socketNumber, "Recieved Message", strlen("Recieved Message"));
+
+        cout << message << endl;
+        cout << (message.substr(0, 7) == "CONNECT") << endl;
+        if (message.substr(0, 7) == "CONNECT")
         {
+            cout << "Connect Loop" << endl;
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
             chatting(socketNumber, buffer);

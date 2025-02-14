@@ -92,8 +92,7 @@ int main(int argc, char *argv[])
     {
         bzero(buffer, 256);
         fgets(buffer, 255, stdin);
-        cout << YELLOW << " : YOU \n"
-             << RESET;
+        cout << YELLOW << " : YOU " << RESET << endl;
         n = write(sockfd, buffer, strlen(buffer));
         if (n < 0)
         {
