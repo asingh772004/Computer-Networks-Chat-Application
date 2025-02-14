@@ -230,11 +230,23 @@ void globalChat(char *message)
 }
 
 // to be added : Users Not Present char* message maker
+char *notPresentMsg(vector<string> &privateAliasNotFound)
+{
+    string msg = "Users: ";
+    for (auto username : privateAliasNotFound)
+    {
+        msg += username;
+        msg += ", ";
+    }
+
+    msg += "were not found in the Chat Room.";
+    return &msg[0];
+}
 
 void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     ssize_t Nsend;
-    char *message; // Users Not Present char* message maker called here
+    char *message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
     Nsend = write(sockSender, message, BUFFER_BYTES);
     if (Nsend < 0)
     {
