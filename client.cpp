@@ -25,19 +25,19 @@ void error(const char *msg)
     exit(1);
 }
 
-void receive_handler(char *buffer)
-{
-    string message(buffer);
+// void receive_handler(char *buffer)
+// {
+//     string message(buffer);
 
-    if (message[0] == 'B')
-    {
-        cout << GREEN << " " << message.substr(1) << " " << RESET << endl;
-    }
-    else
-    {
-        cout << RED << " " << message.substr(1) << " " << RESET << endl;
-    }
-}
+//     if (message[0] == 'B')
+//     {
+//         cout << GREEN << " " << message.substr(1) << " " << RESET << endl;
+//     }
+//     else
+//     {
+//         cout << RED << " " << message.substr(1) << " " << RESET << endl;
+//     }
+// }
 
 int main(int argc, char *argv[])
 {
@@ -108,7 +108,9 @@ int main(int argc, char *argv[])
         {
             error("ERROR reading from socket");
         }
-        receive_handler(buffer);
+        string message = buffer;
+        cout << message << endl;
+        // receive_handler(buffer);
     }
     close(sockfd);
     return 0;
