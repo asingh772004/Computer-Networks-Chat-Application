@@ -74,16 +74,17 @@ int main(int argc, char *argv[])
     }
 
     bzero(buffer, 256);
+    cout << "Client should get enter alias:" << endl;
     ssize_t n = read(sockfd, buffer, 255);
     if (n < 0)
     {
         error("ERROR reading from socket");
     }
-    // receive_handler(buffer);
     bzero(buffer, 256);
     fgets(buffer, 255, stdin);
     cout << YELLOW << " : YOU \n"
          << RESET;
+    cout << "Client should now actually enter alias:" << endl;
     n = write(sockfd, buffer, strlen(buffer));
     if (n < 0)
     {
