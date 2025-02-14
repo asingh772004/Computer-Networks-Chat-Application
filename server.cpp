@@ -322,18 +322,23 @@ void clientAlias(int socketNumber, char *buffer)
 {
     ssize_t receivedByteSize, sentByteSize;
     string name;
-    bzero(buffer, BUFFER_BYTES);
-takename:
-    sentByteSize = write(socketNumber, "Enter Alias:", strlen("Enter Alias:"));
-    receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
-    if (receivedByteSize <= 0)
-        goto takename;
-    for (auto it : clientList)
+    bool aliasAssigned = false;
+    while (!aliasAssigned)
     {
-        if (it.second == name)
+        sentByteSize = write(socketNumber, "Enter Alias:", strlen("Enter Alias:"));
+        bzero(buffer, BUFFER_BYTES);
+        receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
+        name = buffer;
+        if (receivedByteSize <= 0)
         {
-            sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
-            goto takename;
+            for (auto it : clientList)
+            {
+                if (it.second == name)
+                {
+                    sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
+                }
+            }
+            aliasAssigned = true;
         }
     }
     clientList[socketNumber] = name;
