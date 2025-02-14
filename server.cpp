@@ -329,17 +329,18 @@ void clientAlias(int socketNumber, char *buffer)
         bzero(buffer, BUFFER_BYTES);
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         name = buffer;
-        if (receivedByteSize <= 0)
+        if (receivedByteSize < 0)
         {
-            for (auto it : clientList)
-            {
-                if (it.second == name)
-                {
-                    sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
-                }
-            }
-            aliasAssigned = true;
+            continue;
         }
+        for (auto it : clientList)
+        {
+            if (it.second == name)
+            {
+                sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
+            }
+        }
+        aliasAssigned = true;
     }
     clientList[socketNumber] = name;
     print(10);
@@ -353,6 +354,7 @@ void *handleClient(void *socketDescription)
     string message;
     ssize_t receivedByteSize, sentByteSize;
     clientAlias(socketNumber, buffer);
+    cout << "Running Server Loop" << endl;
     while (true)
     {
         bzero(buffer, BUFFER_BYTES);
