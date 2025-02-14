@@ -10,9 +10,21 @@
 
 using namespace std;
 
+#define GREEN "\033[32m"
+#define RED "\033[31m"
+#define RESET "\033[0m"
+
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
 #define BUFFER_BYTES 256
+
+typedef enum msgType
+{
+    BROADCAST,
+    CONNECT,
+    DISCONNECT,
+    PRIVATE
+};
 
 int clientCount = 0;
 pthread_mutex_t clientCountMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -90,32 +102,119 @@ public:
     }
 } serverObject;
 
-void chatting(int sock_sender, char *buffer)
+char *msgParser(msgType command, string message, int sockSender)
+{
+    string msg;
+    string username = clientList[sockSender];
+    switch (command)
+    {
+    case CONNECT:
+        msg += username;
+        msg += " has joined the ChatRoom";
+        break;
+
+    case DISCONNECT:
+        msg += username;
+        msg += " has left the ChatRoom";
+        break;
+
+    case PRIVATE:
+        msg += "[" + username + "] ";
+        msg += message;
+        break;
+
+    case BROADCAST:
+        msg += "[" + username + "is Broadcasting] ";
+        msg += message;
+        break;
+    }
+
+    return &msg[0];
+}
+
+void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
+{
+    int index = 0;
+    while (index < message.size() && message[index] == '@')
+    {
+        string username;
+        index++;
+        while (index < message.size() && message[index] != ' ')
+        {
+            username += message[index];
+            index++;
+        }
+
+        if (chatRoom.find(username) != chatRoom.end())
+        {
+            int portNo = chatRoom[username];
+            privateSocketNo.push_back(portNo);
+        }
+        else
+        {
+            privateAliasNotFound.push_back(username);
+        }
+        index++;
+    }
+
+    message = message.substr(index);
+    return;
+}
+
+msgType commandHandler(string &message, int sockSender, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
+{
+    msgType command;
+
+    if (message[0] == '@')
+    {
+        command = PRIVATE;
+        privateMsgParser(message, privateSocketNo, privateAliasNotFound);
+        return command;
+    }
+    else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
+    {
+        command = CONNECT;
+        message = message.substr(7);
+        return command;
+    }
+    else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
+    {
+        command = DISCONNECT;
+        message = message.substr(10);
+        return command;
+    }
+
+    return command;
+}
+
+void chatting(int sockSender, char *buffer)
 {
     ssize_t n_send, n_rec;
     string message;
     msgType command;
     vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
+    // to be added : client connected message
+    pthread_mutex_unlock(&chatRoomMutex);
     bool disconnectFlag = false;
     while (!disconnectFlag)
     {
         privateSocketNo.clear();
         privateAliasNotFound.clear();
-        n_rec = read(sock_sender, buffer, 256);
+        n_rec = read(sockSender, buffer, 256);
         message = buffer;
-        command = commandHandler(message, sock_sender, privateSocketNo, privateAliasNotFound);
-        buffer = msgParser(command, message, sock_sender);
+        command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
+        buffer = msgParser(command, message, sockSender);
         switch (command)
         {
         case BROADCAST:
-            //
+            // to be added :
             break;
         case PRIVATE:
-            //
+            // to be added :
             break;
         case DISCONNECT:
-            //
+            // to be added :
             disconnectFlag = true;
             break;
         }
@@ -164,13 +263,13 @@ void *handleClient(void *socketDescription)
             chatRoom[clientList[socketNumber]] = socketNumber;
             chatting(socketNumber, buffer);
         }
-        }
+    }
     close(socketNumber);
     free(socketDescription);
     pthread_mutex_lock(&clientCountMutex);
     clientCount--;
     pthread_mutex_unlock(&clientCountMutex);
-    return 0;
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
