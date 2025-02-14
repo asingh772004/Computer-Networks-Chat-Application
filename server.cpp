@@ -129,7 +129,9 @@ char *msgParser(msgType command, string message, int sockSender)
         break;
     }
 
-    return &msg[0];
+    char *dynamicMsg = new char[msg.size() + 1];
+    strcpy(dynamicMsg, msg.c_str());
+    return dynamicMsg;
 }
 
 void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
@@ -241,7 +243,9 @@ char *notPresentMsg(vector<string> &privateAliasNotFound)
     }
 
     msg += "were not found in the Chat Room.";
-    return &msg[0];
+    char *dynamicMsg = new char[msg.size() + 1];
+    strcpy(dynamicMsg, msg.c_str());
+    return dynamicMsg;
 }
 
 void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
