@@ -194,7 +194,7 @@ void privateMessage(vector<int> &sockReceiver, char *msg)
     ssize_t Nsend;
     for (auto it : sockReceiver)
     {
-        Nsend = write(it, msg, BUFFER_BYTES);
+        Nsend = write(it, msg, strlen(msg));
         if (Nsend < 0)
         {
             /*error */
@@ -209,7 +209,7 @@ void broadcast(int sockSender, char *message)
     {
         if (it.second != sockSender)
         {
-            Nsend = write(it.second, message, BUFFER_BYTES);
+            Nsend = write(it.second, message, strlen(message));
             if (Nsend < 0)
             {
                 /*error */
@@ -223,7 +223,7 @@ void globalChat(char *message)
     ssize_t Nsend;
     for (auto it : chatRoom)
     {
-        Nsend = write(it.second, message, BUFFER_BYTES);
+        Nsend = write(it.second, message, strlen(message));
         if (Nsend < 0)
         {
             /*error */
@@ -252,7 +252,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     ssize_t Nsend;
     char *message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
-    Nsend = write(sockSender, message, BUFFER_BYTES);
+    Nsend = write(sockSender, message, strlen(message));
     if (Nsend < 0)
     {
         /*error */
@@ -305,7 +305,7 @@ void clientAlias(int socketNumber, char *buffer)
     string name;
     bzero(buffer, BUFFER_BYTES);
 takename:
-    sentByteSize = write(socketNumber, "Enter Alias:", 16);
+    sentByteSize = write(socketNumber, "Enter Alias:", strlen("Enter Alias:"));
     receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
     if (receivedByteSize <= 0)
         goto takename;
@@ -313,7 +313,7 @@ takename:
     {
         if (it.second == name)
         {
-            sentByteSize = write(socketNumber, "Alias already taken.", 16);
+            sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
             goto takename;
         }
     }
