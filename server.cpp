@@ -163,7 +163,7 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
 
 msgType commandHandler(string &message, int sockSender, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
 {
-    msgType command;
+    msgType command = BROADCAST;
 
     if (message[0] == '@')
     {
@@ -187,6 +187,61 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     return command;
 }
 
+void privateMessage(vector<int> &sockReceiver, char *msg)
+{
+    ssize_t Nsend;
+    for (auto it : sockReceiver)
+    {
+        Nsend = write(it, msg, BUFFER_BYTES);
+        if (Nsend < 0)
+        {
+            /*error */
+        }
+    }
+}
+
+void broadcast(int sockSender, char *message)
+{
+    ssize_t Nsend;
+    for (auto it : chatRoom)
+    {
+        if (it.second != sockSender)
+        {
+            Nsend = write(it.second, message, BUFFER_BYTES);
+            if (Nsend < 0)
+            {
+                /*error */
+            }
+        }
+    }
+}
+
+void globalChat(char *message)
+{
+    ssize_t Nsend;
+    for (auto it : chatRoom)
+    {
+        Nsend = write(it.second, message, BUFFER_BYTES);
+        if (Nsend < 0)
+        {
+            /*error */
+        }
+    }
+}
+
+// to be added : Users Not Present char* message maker
+
+void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
+{
+    ssize_t Nsend;
+    char *message; // Users Not Present char* message maker called here
+    Nsend = write(sockSender, message, BUFFER_BYTES);
+    if (Nsend < 0)
+    {
+        /*error */
+    }
+}
+
 void chatting(int sockSender, char *buffer)
 {
     ssize_t n_send, n_rec;
@@ -194,13 +249,18 @@ void chatting(int sockSender, char *buffer)
     msgType command;
     vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
-    // to be added : client connected message
+
+    bzero(buffer, BUFFER_BYTES);
+    buffer = msgParser(CONNECT, "", sockSender);
+    globalChat(buffer);
     pthread_mutex_unlock(&chatRoomMutex);
+
     bool disconnectFlag = false;
     while (!disconnectFlag)
     {
         privateSocketNo.clear();
         privateAliasNotFound.clear();
+        bzero(buffer, BUFFER_BYTES);
         n_rec = read(sockSender, buffer, 256);
         message = buffer;
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
@@ -208,13 +268,14 @@ void chatting(int sockSender, char *buffer)
         switch (command)
         {
         case BROADCAST:
-            // to be added :
+            broadcast(sockSender, buffer);
             break;
         case PRIVATE:
-            // to be added :
+            privateMessage(privateSocketNo, buffer);
+            userNotPresent(privateAliasNotFound, sockSender);
             break;
         case DISCONNECT:
-            // to be added :
+            globalChat(buffer);
             disconnectFlag = true;
             break;
         }
@@ -251,6 +312,7 @@ void *handleClient(void *socketDescription)
     clientAlias(socketNumber, buffer);
     while (true)
     {
+        bzero(buffer, BUFFER_BYTES);
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         if (receivedByteSize < 0)
         {
@@ -262,6 +324,10 @@ void *handleClient(void *socketDescription)
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
             chatting(socketNumber, buffer);
+        }
+        else if (message == "EXIT")
+        {
+            break;
         }
     }
     close(socketNumber);
