@@ -43,7 +43,7 @@ receive_handler(char *buffer)
     }
     else
     {
-        cout<<GREEN<<" "<<message.substr(1)<< " "<<RESET<<endl;
+        cout<<RED<<" "<<message.substr(1)<< " "<<RESET<<endl;
     }
 }
 
