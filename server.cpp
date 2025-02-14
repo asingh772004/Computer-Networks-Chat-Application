@@ -9,169 +9,275 @@
 #include <algorithm>
 
 using namespace std;
-
-#define Server_ID "10.10.209.140"
-#define Port_No 4269
-
 #define MAX_CLIENTS 5
+#define BUFFER_SIZE 100
 int client_count = 0;
 pthread_mutex_t client_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 map<int, string> Client_List;
 map<string, int> Chat_Room;
 
-void error(char *msg)
+typedef enum msgType
 {
-    perror(msg);
-    exit(1);
-}
+    BROADCAST,
+    CONNECT,
+    DISCONNECT,
+    PRIVATE
+};
 
-void trim(string &s)
+class server
 {
-    int n = s.length();
-    int i = 0;
-    for (; i < n; i++)
+public:
+    int port, sockfd, connectid, bindid, listenid, connfd;
+    struct sockaddr_in serv_addr, cli_addr;
+
+    void getPort(char *argv[])
     {
-        if (s[i] != ' ')
-            break;
+        port = atoi(argv[1]);
     }
-    s = s.substr(i);
+
+    void socketNumber()
+    {
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0)
+        {
+            cout << "Client Socket Creation Failed.Exiting..." << endl;
+            exit(0);
+        }
+        else
+            cout << "Client Socket was successfully created." << endl;
+    }
+
+    void socketBind()
+    {
+        bzero((sockaddr_in *)&serv_addr, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = htons(INADDR_ANY);
+        serv_addr.sin_port = htons(port);
+        bindid = bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        if (bindid < 0)
+        {
+            cout << "Server socket bind failed." << endl;
+            exit(0);
+        }
+        else
+            cout << "Server binded successfully." << endl;
+    }
+
+    void serverListen()
+    {
+        listenid = listen(sockfd, 20);
+        if (listenid != 0)
+        {
+            cout << "server listen failed." << endl;
+            exit(0);
+        }
+        else
+            cout << "server is listening." << endl;
+    }
+
+    void acceptClient()
+    {
+        socklen_t clilen = sizeof(cli_addr);
+        connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+        if (connfd < 0)
+        {
+            printf("server accept failed...\n");
+            exit(0);
+        }
+        else
+            printf("server-client connection established. !!\n");
+    }
+
+    string readClient(int clientSocket)
+    {
+        // Read from the server
+        char buffer[BUFFER_SIZE];
+        bzero(buffer, sizeof(buffer));
+        read(clientSocket, buffer, 8 * sizeof(buffer));
+        string ans(buffer);
+        return ans;
+    }
+
+    void writeClient(string message, int clientSocket)
+    {
+        // Write back to the server
+        char *buffer = &message[0];
+        write(clientSocket, buffer, 8 * sizeof(message));
+    }
+
+    void closeServer(int clientSocket)
+    {
+        close(clientSocket);
+    }
+};
+
+char *msgParser(msgType command, string message, int sock_sender)
+{
+    string msg;
+    string username = Client_List[sock_sender];
+    switch (command)
+    {
+    case CONNECT:
+        msg += username;
+        msg += " has joined the ChatRoom";
+        break;
+
+    case DISCONNECT:
+        msg += username;
+        msg += " has left the ChatRoom";
+        break;
+
+    case PRIVATE:
+        msg += "[" + username + "] ";
+        msg += message;
+        break;
+
+    case BROADCAST:
+        msg += "[" + username + "is Broadcasting] ";
+        msg += message;
+        break;
+    }
+
+    return &msg[0];
 }
 
-bool isExit(string s)
+void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
 {
-    int n = s.length();
-    int space = s.find_first_of(' ');
-    s = s.substr(0, space);
-    return (s == "DISCONNECT");
+    int index = 0;
+    while (index < message.size() && message[index] == '@')
+    {
+        string username;
+        index++;
+        while (index < message.size() && message[index] != ' ')
+        {
+            username += message[index];
+            index++;
+        }
+
+        if (Chat_Room.find(username) != Chat_Room.end())
+        {
+            int portNo = Chat_Room[username];
+            privateSocketNo.push_back(portNo);
+        }
+        else
+        {
+            privateAliasNotFound.push_back(username);
+        }
+        index++;
+    }
+
+    message = message.substr(index);
+    return;
 }
 
-void client_Alias(int sock, char *buffer)
+msgType commandHandler(string &message, int sock_sender, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
 {
+    msgType command;
 
-    ssize_t Nrec, Nsend;
+    if (message[0] == '@')
+    {
+        command = PRIVATE;
+        privateMsgParser(message, privateSocketNo, privateAliasNotFound);
+        return command;
+    }
+    else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
+    {
+        command = CONNECT;
+        message = message.substr(7);
+        return command;
+    }
+    else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
+    {
+        command = DISCONNECT;
+        message = message.substr(10);
+        return command;
+    }
+
+    return command;
+}
+
+void Chatting(int sock_sender, char *buffer)
+{
+    ssize_t n_send, n_rec;
+    vector<int> privateSocketNo;
+    string message;
+    msgType command;
+    vector<string> privateAliasNotFound;
+    bool disconnectFlag = false;
+    while (!disconnectFlag)
+    {
+        n_rec = read(sock_sender, buffer, 256);
+        message = buffer;
+        command = commandHandler(message, sock_sender, privateSocketNo, privateAliasNotFound);
+        buffer = msgParser(command, message, sock_sender);
+        switch (command)
+        {
+        case BROADCAST:
+            //
+            break;
+        case CONNECT:
+            //
+            break;
+        case PRIVATE:
+            //
+            break;
+        case DISCONNECT:
+            //
+            disconnectFlag = true;
+            break;
+        }
+    }
+}
+
+void client_Alias(int socketNumber, char *buffer)
+{
+    ssize_t receivedByteSize, sentByteSize;
     string name;
     bzero(buffer, 256);
 takename:
-    Nsend = write(sock, "Enter Alias:", 16);
-    Nrec = read(sock, buffer, 255);
-    if (Nrec <= 0)
+    sentByteSize = write(socketNumber, "Enter Alias:", 16);
+    receivedByteSize = read(socketNumber, buffer, 255);
+    if (receivedByteSize <= 0)
         goto takename;
     for (auto it : Client_List)
     {
         if (it.second == name)
         {
-            Nsend = write(sock, "Alias already taken.", 16);
+            sentByteSize = write(socketNumber, "Alias already taken.", 16);
             goto takename;
         }
     }
-    Client_List[sock] = name;
+    Client_List[socketNumber] = name;
 }
 
-void join_Chat(int sock, char *buffer)
+void *handleClient(void *socketDescription)
 {
-    ssize_t Nsend;
-    bzero(buffer, 256);
-    buffer = (char *)Client_List[sock][0] + " has joined the chat";
-    Nsend = write(sock, buffer, 16);
-}
-
-void *handleClient(void *socket_desc)
-{
-    int sock = *(int *)socket_desc;
+    int socketNumber = *(int *)socketDescription;
     char buffer[256];
     string message;
-    ssize_t Nrec, Nsend;
-    client_Alias(sock, buffer);
+    ssize_t receivedByteSize, sentByteSize;
+    client_Alias(socketNumber, buffer);
     while (1)
     {
         bzero(buffer, 256);
-        Nrec = read(sock, buffer, 255);
+        receivedByteSize = read(socketNumber, buffer, 255);
         message = buffer;
-        trim(message);
-        if (Nrec <= 0 || isExit(message))
+        if (receivedByteSize <= 0)
         {
             break;
         }
         printf("Message from client: %s\n", buffer);
-        Nsend = write(sock, "Message received", 16);
-        if (Nsend < 0)
+        sentByteSize = write(socketNumber, "Message received", 16);
+        if (sentByteSize < 0)
         {
             break;
         }
     }
     cout << "Client Disconnected" << endl;
-    close(sock);
-    free(socket_desc);
+    close(socketNumber);
+    free(socketDescription);
     pthread_mutex_lock(&client_count_mutex);
     client_count--;
     pthread_mutex_unlock(&client_count_mutex);
-    return 0;
-}
-
-int createSocket()
-{
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
-    {
-        cout << "Socket Creation Failed..exiting" << endl;
-        exit(0);
-    }
-    else
-        cout << "Socket was successfully created" << endl;
-    return sockfd;
-}
-
-int main()
-{
-    int sockfd, newsockfd;
-    socklen_t clilen;
-    char buffer[256];
-    struct sockaddr_in serv_addr, cli_addr;
-    ssize_t n;
-
-    sockfd = createSocket();
-    bzero((char *)&serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(Port_No);
-
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        error("ERROR on binding");
-    }
-    listen(sockfd, 5);
-    clilen = sizeof(cli_addr);
-
-    while (1)
-    {
-        newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
-        if (newsockfd < 0)
-        {
-            error("ERROR on accept");
-            continue;
-        }
-
-        pthread_mutex_lock(&client_count_mutex);
-        if (client_count >= MAX_CLIENTS)
-        {
-            pthread_mutex_unlock(&client_count_mutex);
-            cout << "Maximum clients reached. Connection refused." << endl;
-            close(newsockfd);
-            continue;
-        }
-        client_count++;
-        pthread_mutex_unlock(&client_count_mutex);
-
-        pthread_t thread_id;
-        int *new_sock = (int *)malloc(sizeof(int));
-        *new_sock = newsockfd;
-        if (pthread_create(&thread_id, NULL, handleClient, (void *)new_sock) < 0)
-        {
-            error("Could not create thread");
-            return 1;
-        }
-        pthread_detach(thread_id);
-    }
-    close(sockfd);
     return 0;
 }
