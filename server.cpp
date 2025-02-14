@@ -232,11 +232,12 @@ void globalChat(char *message)
 // to be added : Users Not Present char* message maker
 char *notPresentMsg(vector<string> &privateAliasNotFound)
 {
-    string msg = "Users: ";
+    string msg = "";
     for (auto username : privateAliasNotFound)
     {
+        if (username != privateAliasNotFound[0])
+            msg += ", ";
         msg += username;
-        msg += ", ";
     }
 
     msg += "were not found in the Chat Room.";
