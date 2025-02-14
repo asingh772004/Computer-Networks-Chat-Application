@@ -17,7 +17,6 @@ using namespace std;
 #define WHITE "\033[37m"  // White color
 
 int sockfd;
-void receive_handler(char *buffer);
 
 void error(const char *msg)
 {
@@ -80,7 +79,7 @@ int main(int argc, char *argv[])
     {
         error("ERROR reading from socket");
     }
-    receive_handler(buffer);
+    // receive_handler(buffer);
     bzero(buffer, 256);
     fgets(buffer, 255, stdin);
     cout << YELLOW << " : YOU \n"
