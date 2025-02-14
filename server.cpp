@@ -354,7 +354,7 @@ void *handleClient(void *socketDescription)
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         if (receivedByteSize < 0)
         {
-            break;
+            continue;
         }
         message = buffer;
         if (message == "CONNECT")
