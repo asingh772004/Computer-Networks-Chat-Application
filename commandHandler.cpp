@@ -55,25 +55,57 @@ char *msgParser(msgType command, string message, int sock_sender)
     return &msg[0];
 }
 
-char *commandHandler(string message, int sock_sender)
+void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
 {
-    string msg;
+    int index = 0;
+    while (index < message.size() && message[index] == '@')
+    {
+        string username;
+        index++;
+        while (index < message.size() && message[index] != ' ')
+        {
+            username += message[index];
+            index++;
+        }
+
+        if (Chat_Room.find(username) != Chat_Room.end())
+        {
+            int portNo = Chat_Room[username];
+            privateSocketNo.push_back(portNo);
+        }
+        else
+        {
+            privateAliasNotFound.push_back(username);
+        }
+        index++;
+    }
+
+    message = message.substr(index);
+    return;
+}
+
+msgType commandHandler(string &message, int sock_sender, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
+{
     msgType command;
 
     if (message[0] == '@')
     {
         command = PRIVATE;
+        privateMsgParser(message, privateSocketNo, privateAliasNotFound);
+        return command;
     }
     else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
     {
         command = CONNECT;
-        msg = message.substr(7);
-        msgParser(command, msg, sock_sender);
+        message = message.substr(7);
+        return command;
     }
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
         command = DISCONNECT;
-        msg = message.substr(10);
-        msgParser(command, msg, sock_sender);
+        message = message.substr(10);
+        return command;
     }
+
+    return command;
 }
