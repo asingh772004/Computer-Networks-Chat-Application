@@ -375,7 +375,7 @@ void *handleClient(void *socketDescription)
     pthread_mutex_unlock(&clientCountMutex);
     pthread_exit(NULL);
     print(11);
-    return;
+    return NULL;
 }
 
 int main(int argc, char *argv[])
