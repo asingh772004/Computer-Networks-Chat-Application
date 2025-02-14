@@ -12,9 +12,11 @@ using namespace std;
 
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
+#define BUFFER_BYTES 256
 
 int clientCount = 0;
 pthread_mutex_t clientCountMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t chatRoomMutex = PTHREAD_MUTEX_INITIALIZER;
 map<int, string> clientList;
 map<string, int> chatRoom;
 
@@ -43,7 +45,7 @@ public:
 
     void socketBind()
     {
-        bzero((sockaddr_in *)&serv_addr, sizeof(serv_addr));
+        bzero(&serv_addr, sizeof(serv_addr));
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_addr.s_addr = htons(INADDR_ANY);
         serv_addr.sin_port = htons(port);
@@ -88,14 +90,46 @@ public:
     }
 } serverObject;
 
-void client_Alias(int socketNumber, char *buffer)
+void chatting(int sock_sender, char *buffer)
+{
+    ssize_t n_send, n_rec;
+    string message;
+    msgType command;
+    vector<int> privateSocketNo;
+    vector<string> privateAliasNotFound;
+    bool disconnectFlag = false;
+    while (!disconnectFlag)
+    {
+        privateSocketNo.clear();
+        privateAliasNotFound.clear();
+        n_rec = read(sock_sender, buffer, 256);
+        message = buffer;
+        command = commandHandler(message, sock_sender, privateSocketNo, privateAliasNotFound);
+        buffer = msgParser(command, message, sock_sender);
+        switch (command)
+        {
+        case BROADCAST:
+            //
+            break;
+        case PRIVATE:
+            //
+            break;
+        case DISCONNECT:
+            //
+            disconnectFlag = true;
+            break;
+        }
+    }
+}
+
+void clientAlias(int socketNumber, char *buffer)
 {
     ssize_t receivedByteSize, sentByteSize;
     string name;
-    bzero(buffer, 256);
+    bzero(buffer, BUFFER_BYTES);
 takename:
     sentByteSize = write(socketNumber, "Enter Alias:", 16);
-    receivedByteSize = read(socketNumber, buffer, 255);
+    receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
     if (receivedByteSize <= 0)
         goto takename;
     for (auto it : clientList)
@@ -112,54 +146,31 @@ takename:
 void *handleClient(void *socketDescription)
 {
     int socketNumber = *(int *)socketDescription;
-    char buffer[256];
+    char buffer[BUFFER_SIZE];
     string message;
     ssize_t receivedByteSize, sentByteSize;
-    client_Alias(socketNumber, buffer);
-    while (1)
+    clientAlias(socketNumber, buffer);
+    while (true)
     {
-        bzero(buffer, 256);
-        receivedByteSize = read(socketNumber, buffer, 255);
+        receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
+        if (receivedByteSize < 0)
+        {
+            break;
+        }
         message = buffer;
-        if (receivedByteSize <= 0)
+        if (message == "CONNECT")
         {
-            break;
+            pthread_mutex_lock(&chatRoomMutex);
+            chatRoom[clientList[socketNumber]] = socketNumber;
+            chatting(socketNumber, buffer);
         }
-        printf("Message from client: %s\n", buffer);
-        sentByteSize = write(socketNumber, "Message received", 16);
-        if (sentByteSize < 0)
-        {
-            break;
         }
-    }
-    cout << "Client Disconnected" << endl;
     close(socketNumber);
     free(socketDescription);
     pthread_mutex_lock(&clientCountMutex);
     clientCount--;
     pthread_mutex_unlock(&clientCountMutex);
     return 0;
-}
-
-void clientAlias(int socketNumber, char *buffer)
-{
-    ssize_t receivedByteSize, sentByteSize;
-    string name;
-    bzero(buffer, BUFFER_SIZE);
-takename:
-    sentByteSize = write(socketNumber, "Enter Alias:", 16);
-    receivedByteSize = read(socketNumber, buffer, BUFFER_SIZE);
-    if (receivedByteSize <= 0)
-        goto takename;
-    for (auto it : clientList)
-    {
-        if (it.second == name)
-        {
-            sentByteSize = write(socketNumber, "Alias already taken.", 16);
-            goto takename;
-        }
-    }
-    clientList[socketNumber] = name;
 }
 
 int main(int argc, char *argv[])
