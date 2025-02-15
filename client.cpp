@@ -2,6 +2,7 @@
 #include <iostream>  // For standard I/O operations
 #include <vector>    // For std::vector (if needed)
 #include <algorithm> // For std::find, std::remove, etc. (if needed)
+#include <string>    // For std::string
 #include <cstring>   // For memset(), strcpy(), etc.
 
 // POSIX & System Libraries
@@ -16,6 +17,9 @@
 // Threading Library
 #include <pthread.h> // For pthreads (multithreading)
 
+// Terminal UI (ncurses)
+#include <ncurses.h> // For ncurses-based UI
+
 using namespace std;
 
 #define RESET "\033[0m"
@@ -26,7 +30,67 @@ using namespace std;
 
 #define BUFFER_SIZE 256
 
-pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
+class terminal
+{
+public:
+    WINDOW *chat_win;
+    WINDOW *input_win;
+    pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
+
+    void init_ncurses()
+    {
+        initscr();
+        cbreak();
+        noecho();
+        keypad(stdscr, TRUE);
+
+        int chat_height = LINES - 3;
+        chat_win = newwin(chat_height, COLS, 0, 0);
+        input_win = newwin(3, COLS, chat_height, 0);
+
+        scrollok(chat_win, TRUE);
+        box(input_win, 0, 0);
+        wrefresh(input_win);
+    }
+
+    void consoleStatement(const string &message)
+    {
+        pthread_mutex_lock(&consoleLock);
+        wprintw(chat_win, "%s\n", message.c_str());
+        wrefresh(chat_win);
+        pthread_mutex_unlock(&consoleLock);
+    }
+
+    string getInput()
+    {
+        string input;
+        int ch;
+        while ((ch = wgetch(input_win)) != '\n')
+        {
+            if (ch == KEY_BACKSPACE || ch == 127)
+            {
+                if (!input.empty())
+                {
+                    input.pop_back();
+                    int y, x;
+                    getyx(input_win, y, x);
+                    mvwaddch(input_win, y, x - 1, ' ');
+                    wmove(input_win, y, x - 1);
+                }
+            }
+            else
+            {
+                input += ch;
+                waddch(input_win, ch);
+            }
+            wrefresh(input_win);
+        }
+        wclear(input_win);
+        box(input_win, 0, 0);
+        wrefresh(input_win);
+        return input;
+    }
+} terminalObject;
 
 class client
 {
@@ -100,13 +164,6 @@ public:
     }
 } clientObject;
 
-void consoleStatement(string message)
-{
-    pthread_mutex_lock(&consoleLock);
-    cout << message << endl;
-    pthread_mutex_unlock(&consoleLock);
-}
-
 void *readHandler(void *args)
 {
     pair<ssize_t, string> recieveReturn;
@@ -119,16 +176,16 @@ void *readHandler(void *args)
         message = recieveReturn.second;
         if (bytesRead < 0)
         {
-            consoleStatement("Error in Reading");
+            terminalObject.consoleStatement("Error in Reading");
         }
         else if (bytesRead == 0)
         {
-            consoleStatement("Server Disconnected");
+            terminalObject.consoleStatement("Server Disconnected");
             break;
         }
         else
         {
-            consoleStatement(message);
+            terminalObject.consoleStatement(message);
         }
     }
     pthread_exit(NULL);
@@ -139,7 +196,7 @@ void *writeHandler(void *args)
     string message;
     while (true)
     {
-        getline(cin, message);
+        message = terminalObject.getInput();
         clientObject.sendMessage(message);
         if (message == "EXIT")
         {
