@@ -123,7 +123,7 @@ public:
         while (true)
         {
             bzero(buffer, BUFFER_SIZE);
-            bytesRead = read(clientSockNo, buffer, BUFFER_SIZE-1);
+            bytesRead = read(clientSockNo, buffer, BUFFER_SIZE - 1);
             if (bytesRead <= 0)
             {
                 return {bytesRead, message};
@@ -396,7 +396,7 @@ void *handleClient(void *socketDescription)
 
     clientAlias(socketNumber, buffer);
 
-    while (!isEXIT)
+    while (!isEXIT || !(message.size() >= 4 && message.substr(0, 4) == "EXIT"))
     {
         receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
@@ -415,7 +415,7 @@ void *handleClient(void *socketDescription)
             chatRoom[clientList[socketNumber]] = socketNumber;
             isEXIT = chatting(socketNumber, buffer);
         }
-        else if (isEXIT)
+        else if (isEXIT || (message.size() >= 4 && message.substr(0, 4) == "EXIT"))
         {
             break;
         }
