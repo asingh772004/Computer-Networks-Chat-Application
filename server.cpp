@@ -26,7 +26,7 @@ using namespace std;
 #define CYAN "\033[36m"   // Cyan color
 
 #define MAX_CLIENTS 5
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 4096
 
 enum msgType
 {
@@ -122,8 +122,8 @@ public:
         ssize_t bytesRead;
         while (true)
         {
-            bzero(buffer, 256);
-            bytesRead = read(clientSockNo, buffer, 255);
+            bzero(buffer, BUFFER_SIZE);
+            bytesRead = read(clientSockNo, buffer, BUFFER_SIZE-1);
             if (bytesRead <= 0)
             {
                 return {bytesRead, message};

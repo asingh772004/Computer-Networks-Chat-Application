@@ -27,7 +27,7 @@ using namespace std;
 #define GREEN "\033[32m"  // Green color
 #define YELLOW "\033[33m" // Yellow color
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 4096
 
 terminal terminalObject;
 
@@ -43,7 +43,7 @@ public:
     int portno, sockfd;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    char buffer[256];
+    char buffer[BUFFER_SIZE];
     ssize_t bytesRead, bytesSent;
 
     void getPort(char *argv[])
@@ -95,7 +95,7 @@ public:
 
     pair<ssize_t, string> recieveMessage()
     {
-        bzero(buffer, 256);
+        bzero(buffer, BUFFER_SIZE);
         bytesRead = read(sockfd, buffer, sizeof(buffer));
         string message(buffer);
         return {bytesRead, message};
