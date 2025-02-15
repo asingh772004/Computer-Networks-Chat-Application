@@ -360,7 +360,7 @@ void clientAlias(int socketNumber, char *buffer)
     pair<ssize_t, string> receiveReturn;
     ssize_t receivedByteSize, sentByteSize;
     string name;
-    bool aliasNotAssigned;
+    bool aliasNotAssigned = true;
     while (aliasNotAssigned)
     {
         aliasNotAssigned = true;
