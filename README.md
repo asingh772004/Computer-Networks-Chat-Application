@@ -29,11 +29,14 @@ This is a multi-client chat application implemented in C++ using a server-client
 ```g++ -o client client.cpp -lpthread -lncurses```
 
 ## USAGE
-
+&emsp;
 ### Starting the server
+&emsp;&emsp;
 #### Run the server with a specified port number:
 ```./server <port_number>```
+&emsp;
 #### Example:
+&emsp;&emsp;
 ```./server 8080```
 
 ### Connecting clients
