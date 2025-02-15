@@ -147,9 +147,9 @@ void *writeHandler(void *args)
     {
         message = terminalObject.getInput();
         message += "\n";
-        if(sizeof(message) > BUFFER_SIZE)
+        if (sizeof(message) > BUFFER_SIZE)
         {
-            message[message.size()-1] = '\n';
+            message[BUFFER_SIZE - 1] = '\n';
         }
         clientObject.sendMessage(message);
         message.pop_back();
