@@ -41,3 +41,12 @@ Run the client and specify the server IP and port:
 ```./client <server_ip> <port_number>```
 Example:
 ```./client 127.0.0.1 8080```
+
+##Commands
+|Command|Description|
+|---|---|
+|CONNECT|Connects the user to the chatroom|
+|DISCONNECT|Disconnects the user from the chatroom|
+|EXIT|Exits the chat application|
+|@username <message>|Sends a private message to a user|
+|<message>|Broadcasts a message to all connected users except the sender|
