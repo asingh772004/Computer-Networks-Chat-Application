@@ -62,7 +62,7 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 #### Compile the client
 ```g++ -o client client.cpp -lpthread -lncurses```
-__make sure client.cpp and terminal.h are in the same directory__
+*make sure client.cpp and terminal.h are in the same directory*
 
 <br>
 
@@ -91,3 +91,24 @@ __make sure client.cpp and terminal.h are in the same directory__
 |EXIT|Exits the chat application|
 |@username \<message\>|Sends a private message to a user|
 |\<message\>|Broadcasts a message to all connected users except the sender|
+
+<br>
+<br>
+
+## SAMPLE IMAGES
+
+#### server side
+![serverImage](https://github.com/user-attachments/assets/cb52b6ce-da31-4757-b52d-a01b7053218b)
+
+#### client 1
+![client1Image](https://github.com/user-attachments/assets/55430f41-2ee3-4481-b907-0fbe623e1611)
+
+#### client 2
+![client1Image](https://github.com/user-attachments/assets/25dccb81-9ef9-4c26-954a-0935a93bb95d)
+
+#### client 3
+![client1Image](https://github.com/user-attachments/assets/5c19fafb-c4ad-4969-a1aa-3e121393f221)
+
+
+
+
