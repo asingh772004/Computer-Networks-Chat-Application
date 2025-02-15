@@ -372,13 +372,14 @@ void clientAlias(int socketNumber, char *buffer)
         {
             if (it.second == name)
             {
-                sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
+                sentByteSize = serverObject.sendMessage(socketNumber, "Alias already taken.");
                 reEnterAlias = true;
                 continue;
             }
         }
     }
     clientList[socketNumber] = name;
+    sentByteSize = serverObject.sendMessage(socketNumber, "Alias Assigned");
     cout << YELLOW << "Assigned Socket " << socketNumber << " : " << name << RESET << endl;
     return;
 }
