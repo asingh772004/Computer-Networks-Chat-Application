@@ -55,12 +55,34 @@ public:
 
     void closeTerminal()
     {
+        int chat_height, chat_width;
+        getmaxyx(chatWin, chat_height, chat_width);
+        std::vector<std::string> chat_history;
+        for (int i = 0; i < chat_height; i++)
+        {
+            char line[chat_width + 1];
+            mvwinnstr(chatWin, i, 0, line, chat_width);
+            line[chat_width] = '\0';
+            chat_history.push_back(std::string(line));
+        }
+        wclear(inputWin);
+        wrefresh(inputWin);
         delwin(inputWin);
+        inputWin = nullptr;
         wresize(chatWin, LINES, COLS);
         mvwin(chatWin, 0, 0);
         wrefresh(chatWin);
         refresh();
         endwin();
+        for (const auto &line : chat_history)
+        {
+            if (!line.empty() && line.find_first_not_of(' ') != std::string::npos)
+            {
+                std::cout << line << std::endl;
+            }
+        }
+        std::cout << "\033[" << chat_height << "B";
+        system("stty sane");
     }
 
     void consoleStatement(const string &message)
@@ -75,46 +97,46 @@ public:
     {
         string input;
         int ch;
-        int max_width = COLS - 4; // Account for box borders and some padding
-
+        int max_width = COLS - 4;
         while (true)
         {
             ch = wgetch(inputWin);
 
             if (ch == '\n')
+            {
                 break;
-
+            }
             if (ch == KEY_BACKSPACE || ch == 127)
             {
                 if (!input.empty())
+                {
                     input.pop_back();
+                }
             }
             else if (ch != ERR && input.length() < max_width)
             {
                 input += ch;
             }
-
-            // Clear input window and redraw box
             wclear(inputWin);
             box(inputWin, 0, 0);
-
-            // Calculate the center position for the input text
-            int center_x = (COLS - input.length()) / 2;
-            mvwprintw(inputWin, 1, center_x, "%s", input.c_str());
+            int center_y = 1;
+            int start_x = 2;
+            mvwprintw(inputWin, center_y, start_x, "%s", input.c_str());
             wrefresh(inputWin);
         }
-
-        // Clear input window and redraw box
         wclear(inputWin);
         box(inputWin, 0, 0);
         wrefresh(inputWin);
-
-        // Display input in chat window
         consoleStatement("You: " + input);
-
         return input;
     }
 } terminalObject;
+
+void leaveGracefully()
+{
+    terminalObject.closeTerminal();
+    exit(0);
+}
 
 class client
 {
@@ -136,7 +158,7 @@ public:
         if (sockfd < 0)
         {
             cout << RED << "Could not open Socket" << RESET << endl;
-            exit(0);
+            leaveGracefully();
         }
     }
 
@@ -146,7 +168,7 @@ public:
         if (server == NULL)
         {
             cout << RED << "Could not get Server" << RESET << endl;
-            exit(0);
+            leaveGracefully();
         }
     }
 
@@ -163,7 +185,7 @@ public:
         if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             cout << RED << "Could not connect to Server" << RESET << endl;
-            exit(0);
+            leaveGracefully();
         }
     }
 
@@ -237,14 +259,13 @@ int main(int argc, char *argv[])
         fprintf(stderr, "usage %s hostname port\n", argv[0]);
         exit(0);
     }
-
-    terminalObject.initNcurses();
-
     clientObject.getPort(argv);
     clientObject.getSocketNo();
     clientObject.getServer(argv);
     clientObject.initServer();
     clientObject.connectServer();
+
+    terminalObject.initNcurses();
 
     pthread_t readThread, writeThread;
     pthread_create(&readThread, NULL, readHandler, NULL);
@@ -253,5 +274,6 @@ int main(int argc, char *argv[])
     pthread_cancel(readThread);
 
     clientObject.closeClient();
+    terminalObject.closeTerminal();
     return 0;
 }
