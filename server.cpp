@@ -116,36 +116,9 @@ public:
         close(clientSocket);
     }
 
-    ssize_t sendAll(int clientSocket, const string &message)
-    {
-        const char *buffer = message.c_str();
-        size_t totalLength = message.length();
-        size_t bytesSent = 0;
-        const size_t CHUNK_SIZE = 32;
-
-        while (bytesSent < totalLength)
-        {
-            size_t remainingBytes = totalLength - bytesSent;
-            size_t currentChunkSize = min(CHUNK_SIZE, remainingBytes);
-
-            ssize_t result = write(clientSocket, buffer + bytesSent, currentChunkSize);
-
-            if (result < 0)
-            {
-                if (errno == EINTR)
-                    continue; // Interrupted by signal, retry
-                return -1;    // Error occurred
-            }
-
-            bytesSent += result;
-        }
-
-        return bytesSent;
-    }
-
     pair<ssize_t, string> recvAll(int clientSocket)
     {
-        string message;
+        string message = "";
         const size_t CHUNK_SIZE = 32;
         char buffer[CHUNK_SIZE];
         ssize_t totalBytesRead = 0;
@@ -153,7 +126,7 @@ public:
         while (true)
         {
             bzero(buffer, CHUNK_SIZE);
-            ssize_t bytesRead = read(clientSocket, buffer, CHUNK_SIZE - 1);
+            ssize_t bytesRead = read(clientSocket, buffer, CHUNK_SIZE);
 
             if (bytesRead < 0)
             {
@@ -194,9 +167,37 @@ public:
         return recvAll(clientSockNo);
     }
 
+    ssize_t sendAll(int clientSocket, const string &message)
+    {
+        const char *buffer = message.c_str();
+        size_t totalLength = message.length();
+        size_t bytesSent = 0;
+        const size_t CHUNK_SIZE = 32;
+
+        while (bytesSent < totalLength)
+        {
+            size_t remainingBytes = totalLength - bytesSent;
+            size_t currentChunkSize = min(CHUNK_SIZE, remainingBytes);
+
+            ssize_t result = write(clientSocket, buffer + bytesSent, currentChunkSize);
+
+            if (result < 0)
+            {
+                if (errno == EINTR)
+                    continue; // Interrupted by signal, retry
+                return -1;    // Error occurred
+            }
+            cout << YELLOW << "\tBytes Sent: " << result << RESET << endl;
+            cout << YELLOW << "\tMessage Sent: " << buffer + bytesSent << RESET << endl;
+            bytesSent += result;
+        }
+
+        return bytesSent;
+    }
+
     ssize_t sendMessage(int clientSockNo, string message)
     {
-        message += '\n'; // Add newline delimiter
+        message += "\n";
         return sendAll(clientSockNo, message);
     }
 
@@ -368,7 +369,6 @@ bool chatting(int sockSender, char *buffer)
     message = msgParser(CONNECT, "", sockSender);
     globalChat(message);
     cout << message << endl;
-    pthread_mutex_unlock(&chatRoomMutex);
 
     bool disconnectFlag = false;
     while (!disconnectFlag)
@@ -472,14 +472,13 @@ void *handleClient(void *socketDescription)
         }
 
         cout << YELLOW << clientList[socketNumber] << ": " << message << RESET << endl;
-        sentByteSize = serverObject.sendMessage(socketNumber, "You are not in Chat Room, Type CONNECT");
 
         if (message.substr(0, 7) == "CONNECT")
         {
-            pthread_mutex_lock(&chatRoomMutex);
             if (chatRoom.size() > 0)
             {
                 message = getAllInChat();
+                cout << YELLOW << message << RESET << endl;
                 sentByteSize = serverObject.sendMessage(socketNumber, message);
             }
             chatRoom[clientList[socketNumber]] = socketNumber;
@@ -489,6 +488,10 @@ void *handleClient(void *socketDescription)
         else if (isEXIT || (message.size() >= 4 && message.substr(0, 4) == "EXIT"))
         {
             isEXIT = true;
+        }
+        else
+        {
+            sentByteSize = serverObject.sendMessage(socketNumber, "You are not in Chat Room, Type CONNECT");
         }
     }
     cout << YELLOW << clientList[socketNumber] << ": is EXITING" << RESET << endl;

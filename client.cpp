@@ -92,24 +92,31 @@ public:
     {
         close(sockfd);
     }
-    pair<ssize_t, string> recvAll() {
-        string message;
+
+    pair<ssize_t, string> recvAll()
+    {
+        string message = "";
         const size_t CHUNK_SIZE = 32;
         char chunk[CHUNK_SIZE];
         ssize_t totalBytesRead = 0;
 
-        while (true) {
+        while (true)
+        {
             bzero(chunk, CHUNK_SIZE);
             ssize_t bytesRead = read(sockfd, chunk, CHUNK_SIZE - 1);
-            
-            if (bytesRead < 0) {
-                if (errno == EINTR) continue; // Interrupted by signal, retry
+
+            if (bytesRead < 0)
+            {
+                if (errno == EINTR)
+                    continue;    // Interrupted by signal, retry
                 return {-1, ""}; // Error occurred
             }
-            
-            if (bytesRead == 0) {
+
+            if (bytesRead == 0)
+            {
                 // Connection closed by server
-                if (totalBytesRead == 0) return {0, ""};
+                if (totalBytesRead == 0)
+                    return {0, ""};
                 break;
             }
 
@@ -118,50 +125,59 @@ public:
             totalBytesRead += bytesRead;
 
             // Check if we've received a complete message (ending with newline)
-            if (message.find('\n') != string::npos) {
+            if (message.find('\n') != string::npos)
+            {
                 break;
             }
         }
 
         // Remove the trailing newline if present
-        if (!message.empty() && message.back() == '\n') {
+        if (!message.empty() && message.back() == '\n')
+        {
             message.pop_back();
         }
 
         return {totalBytesRead, message};
     }
 
-    ssize_t sendAll(const string& message) {
-        const char* buffer = message.c_str();
+    ssize_t sendAll(const string &message)
+    {
+        const char *buffer = message.c_str();
         size_t totalLength = message.length();
         size_t bytesSent = 0;
         const size_t CHUNK_SIZE = 32;
 
-        while (bytesSent < totalLength) {
+        while (bytesSent < totalLength)
+        {
             size_t remainingBytes = totalLength - bytesSent;
             size_t currentChunkSize = min(CHUNK_SIZE, remainingBytes);
-            
+
             ssize_t result = write(sockfd, buffer + bytesSent, currentChunkSize);
-            
-            if (result < 0) {
-                if (errno == EINTR) continue; // Interrupted by signal, retry
-                return -1; // Error occurred
+
+            if (result < 0)
+            {
+                if (errno == EINTR)
+                    continue; // Interrupted by signal, retry
+                return -1;    // Error occurred
             }
-            
+
             bytesSent += result;
         }
-        
+
         return bytesSent;
     }
 
     // Replace existing receiveMessage function with:
-    pair<ssize_t, string> recieveMessage() {
+    pair<ssize_t, string> recieveMessage()
+    {
         return recvAll();
     }
 
     // Replace existing sendMessage function with:
-    ssize_t sendMessage(string message) {
-        if (!message.empty() && message.back() != '\n') {
+    ssize_t sendMessage(string message)
+    {
+        if (!message.empty() && message.back() != '\n')
+        {
             message += '\n'; // Add newline delimiter if not present
         }
         return sendAll(message);
