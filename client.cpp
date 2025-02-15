@@ -33,11 +33,11 @@ using namespace std;
 class terminal
 {
 public:
-    WINDOW *chat_win;
-    WINDOW *input_win;
+    WINDOW *chatWin;
+    WINDOW *inputWin;
     pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
 
-    void init_ncurses()
+    void initNcurses()
     {
         initscr();
         cbreak();
@@ -45,19 +45,19 @@ public:
         keypad(stdscr, TRUE);
 
         int chat_height = LINES - 3;
-        chat_win = newwin(chat_height, COLS, 0, 0);
-        input_win = newwin(3, COLS, chat_height, 0);
+        chatWin = newwin(chat_height, COLS, 0, 0);
+        inputWin = newwin(3, COLS, chat_height, 0);
 
-        scrollok(chat_win, TRUE);
-        box(input_win, 0, 0);
-        wrefresh(input_win);
+        scrollok(chatWin, TRUE);
+        box(inputWin, 0, 0);
+        wrefresh(inputWin);
     }
 
     void consoleStatement(const string &message)
     {
         pthread_mutex_lock(&consoleLock);
-        wprintw(chat_win, "%s\n", message.c_str());
-        wrefresh(chat_win);
+        wprintw(chatWin, "%s\n", message.c_str());
+        wrefresh(chatWin);
         pthread_mutex_unlock(&consoleLock);
     }
 
@@ -65,7 +65,7 @@ public:
     {
         string input;
         int ch;
-        while ((ch = wgetch(input_win)) != '\n')
+        while ((ch = wgetch(inputWin)) != '\n')
         {
             if (ch == KEY_BACKSPACE || ch == 127)
             {
@@ -73,21 +73,21 @@ public:
                 {
                     input.pop_back();
                     int y, x;
-                    getyx(input_win, y, x);
-                    mvwaddch(input_win, y, x - 1, ' ');
-                    wmove(input_win, y, x - 1);
+                    getyx(inputWin, y, x);
+                    mvwaddch(inputWin, y, x - 1, ' ');
+                    wmove(inputWin, y, x - 1);
                 }
             }
             else
             {
                 input += ch;
-                waddch(input_win, ch);
+                waddch(inputWin, ch);
             }
-            wrefresh(input_win);
+            wrefresh(inputWin);
         }
-        wclear(input_win);
-        box(input_win, 0, 0);
-        wrefresh(input_win);
+        wclear(inputWin);
+        box(inputWin, 0, 0);
+        wrefresh(inputWin);
         return input;
     }
 } terminalObject;
@@ -213,6 +213,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "usage %s hostname port\n", argv[0]);
         exit(0);
     }
+
+    terminalObject.initNcurses();
 
     clientObject.getPort(argv);
     clientObject.getSocketNo();
