@@ -53,6 +53,16 @@ public:
         wrefresh(inputWin);
     }
 
+    void closeTerminal()
+    {
+        delwin(inputWin);
+        wresize(chatWin, LINES, COLS);
+        mvwin(chatWin, 0, 0);
+        wrefresh(chatWin);
+        refresh();
+        endwin();
+    }
+
     void consoleStatement(const string &message)
     {
         pthread_mutex_lock(&consoleLock);
