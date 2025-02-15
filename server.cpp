@@ -360,10 +360,10 @@ void clientAlias(int socketNumber, char *buffer)
     pair<ssize_t, string> receiveReturn;
     ssize_t receivedByteSize, sentByteSize;
     string name;
-    bool aliasNotAssigned = true;
-    while (aliasNotAssigned)
+    bool reEnterAlias = true;
+    while (reEnterAlias)
     {
-        aliasNotAssigned = true;
+        reEnterAlias = false;
         sentByteSize = serverObject.sendMessage(socketNumber, "Enter Alias: ");
         receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
@@ -377,7 +377,7 @@ void clientAlias(int socketNumber, char *buffer)
             if (it.second == name)
             {
                 sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
-                aliasNotAssigned = false;
+                reEnterAlias = true;
                 continue;
             }
         }
