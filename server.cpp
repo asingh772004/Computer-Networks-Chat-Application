@@ -116,36 +116,76 @@ public:
         close(clientSocket);
     }
 
-    pair<ssize_t, string> receiveMessage(int clientSockNo, char *buffer)
-    {
-        string message;
-        ssize_t bytesRead;
-        while (true)
-        {
-            bzero(buffer, BUFFER_SIZE);
-            bytesRead = read(clientSockNo, buffer, BUFFER_SIZE - 1);
-            if (bytesRead <= 0)
-            {
-                return {bytesRead, message};
+    ssize_t sendAll(int clientSocket, const string& message) {
+        const char* buffer = message.c_str();
+        size_t totalLength = message.length();
+        size_t bytesSent = 0;
+        const size_t CHUNK_SIZE = 32;
+
+        while (bytesSent < totalLength) {
+            size_t remainingBytes = totalLength - bytesSent;
+            size_t currentChunkSize = min(CHUNK_SIZE, remainingBytes);
+            
+            ssize_t result = write(clientSocket, buffer + bytesSent, currentChunkSize);
+            
+            if (result < 0) {
+                if (errno == EINTR) continue; // Interrupted by signal, retry
+                return -1; // Error occurred
             }
+            
+            bytesSent += result;
+        }
+        
+        return bytesSent;
+    }
+
+    pair<ssize_t, string> recvAll(int clientSocket) {
+        string message;
+        const size_t CHUNK_SIZE = 32;
+        char buffer[CHUNK_SIZE];
+        ssize_t totalBytesRead = 0;
+
+        while (true) {
+            bzero(buffer, CHUNK_SIZE);
+            ssize_t bytesRead = read(clientSocket, buffer, CHUNK_SIZE - 1);
+            
+            if (bytesRead < 0) {
+                if (errno == EINTR) continue; // Interrupted by signal, retry
+                return {-1, ""}; // Error occurred
+            }
+            
+            if (bytesRead == 0) {
+                // Connection closed by client
+                if (totalBytesRead == 0) return {0, ""};
+                break;
+            }
+
             buffer[bytesRead] = '\0';
             message.append(buffer);
-            if (message.find('\n') != string::npos)
-            {
+            totalBytesRead += bytesRead;
+
+            // Check if we've received a complete message (ending with newline)
+            if (message.find('\n') != string::npos) {
                 break;
             }
         }
-        message.pop_back();
-        return {message.size(), message};
+
+        // Remove the trailing newline if present
+        if (!message.empty() && message.back() == '\n') {
+            message.pop_back();
+        }
+
+        return {totalBytesRead, message};
+    }
+    pair<ssize_t, string> receiveMessage(int clientSockNo, char* buffer) {
+        return recvAll(clientSockNo);
+    }
+    
+    ssize_t sendMessage(int clientSockNo, string message) {
+        message += '\n'; // Add newline delimiter
+        return sendAll(clientSockNo, message);
     }
 
-    ssize_t sendMessage(int clientSockNo, string message)
-    {
-        ssize_t bytesSent;
-        char *msgPtr = &message[0];
-        bytesSent = write(clientSockNo, msgPtr, sizeof(message));
-        return bytesSent;
-    }
 } serverObject;
 
 string msgParser(msgType command, string message, int sockSender)
