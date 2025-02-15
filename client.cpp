@@ -131,6 +131,10 @@ void *readHandler(void *args)
         else
         {
             terminalObject.consoleStatement(message);
+            if (message == "EXIT Processed")
+            {
+                break;
+            }
         }
     }
     pthread_exit(NULL);
@@ -145,10 +149,6 @@ void *writeHandler(void *args)
         message += "\n";
         clientObject.sendMessage(message);
         message.pop_back();
-        if (message == "EXIT")
-        {
-            break;
-        }
     }
     pthread_exit(NULL);
 }
@@ -171,8 +171,8 @@ int main(int argc, char *argv[])
     pthread_t readThread, writeThread;
     pthread_create(&readThread, NULL, readHandler, NULL);
     pthread_create(&writeThread, NULL, writeHandler, NULL);
-    pthread_join(writeThread, NULL);
-    pthread_cancel(readThread);
+    pthread_join(readThread, NULL);
+    pthread_cancel(writeThread);
 
     clientObject.closeClient();
     terminalObject.closeTerminal();
