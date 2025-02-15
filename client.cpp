@@ -25,14 +25,11 @@ using namespace std;
 #define BUFFER_SIZE 256
 #define BUFFER_BYTES 8 * BUFFER_SIZE
 
-void error(const char *msg)
-{
-    perror(msg);
-    exit(1);
-}
+pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
 
 class client
 {
+public:
     int portno, sockfd;
     struct sockaddr_in serv_addr;
     struct hostent *server;
@@ -50,6 +47,7 @@ class client
         if (sockfd < 0)
         {
             error("ERROR opening socket");
+            exit(0);
         }
     }
 
@@ -59,7 +57,7 @@ class client
         if (server == NULL)
         {
             fprintf(stderr, "ERROR, no such host\n");
-            exit(1);
+            exit(0);
         }
     }
 
@@ -76,29 +74,23 @@ class client
         if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
             error("ERROR connecting");
+            exit(0);
         }
     }
 
-    string recieveMessage()
+    pair<ssize_t, string> recieveMessage()
     {
         bzero(buffer, 256);
         bytesRead = read(sockfd, buffer, BUFFER_BYTES);
-        if (bytesRead < 0)
-        {
-            cout << RED << "Not able to read" << RESET << endl;
-        }
         string message(buffer);
-        return message;
+        return {bytesRead, message};
     }
 
-    void sendMessage(string message)
+    ssize_t sendMessage(string message)
     {
         char *msgPtr = &message[0];
         bytesSent = write(sockfd, msgPtr, 8 * sizeof(message));
-        if (bytesSent < 0)
-        {
-            cout << RED << "Not able to write" << RESET << endl;
-        }
+        return bytesSent;
     }
 
     void closeClient()
@@ -108,16 +100,75 @@ class client
 
 } clientObject;
 
+void consoleStatement(string message)
+{
+    pthread_mutex_lock(&consoleLock);
+    cout << message << endl;
+    pthread_mutex_unlock(&consoleLock);
+}
+
+void *readHandler(void *args)
+{
+    pair<ssize_t, string> recieveReturn;
+    string message;
+    ssize_t bytesRead;
+    while (true)
+    {
+        recieveReturn = clientObject.recieveMessage();
+        bytesRead = recieveReturn.first;
+        message = recieveReturn.second;
+        if (bytesRead < 0)
+        {
+            consoleStatement("Error in Reading");
+        }
+        else if (bytesRead == 0)
+        {
+            consoleStatement("Server Disconnected");
+            break;
+        }
+        else
+        {
+            consoleStatement(message);
+        }
+    }
+    pthread_exit(NULL);
+}
+
+void *writeHandler(void *args)
+{
+    string message;
+    while (true)
+    {
+        cin >> message;
+        clientObject.sendMessage(message);
+        if (message == "EXIT")
+        {
+            break;
+        }
+    }
+    pthread_exit(NULL);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
         fprintf(stderr, "usage %s hostname port\n", argv[0]);
-        exit(1);
+        exit(0);
     }
 
-    while (true)
-    {
-    }
+    clientObject.getPort(argv);
+    clientObject.getSocketNo();
+    clientObject.getServer(argv);
+    clientObject.initServer();
+    clientObject.connectServer();
+
+    pthread_t readThread, writeThread;
+    pthread_create(&readThread, NULL, readHandler, NULL);
+    pthread_create(&writeThread, NULL, writeHandler, NULL);
+    pthread_join(writeThread, NULL);
+    pthread_cancel(readThread);
+
+    clientObject.closeClient();
     return 0;
 }
