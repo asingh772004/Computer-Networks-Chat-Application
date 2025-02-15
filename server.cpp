@@ -23,6 +23,7 @@ using namespace std;
 #define RED "\033[31m"    // Red color
 #define GREEN "\033[32m"  // Green color
 #define YELLOW "\033[33m" // Yellow color
+#define CYAN "\033[36m"   // Cyan color
 
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
@@ -32,7 +33,8 @@ enum msgType
     BROADCAST,
     CONNECT,
     DISCONNECT,
-    PRIVATE
+    PRIVATE,
+    EXIT
 };
 
 int clientCount = 0;
@@ -158,6 +160,7 @@ string msgParser(msgType command, string message, int sockSender)
         break;
 
     case DISCONNECT:
+    case EXIT:
         msg += username;
         msg += " has left the ChatRoom";
         break;
@@ -217,27 +220,27 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
 
     if (message[0] == '@')
     {
-        cout << "\tPRIVATE DETECTED " << endl;
+        // cout<<CYAN << "\tPrivate Detected" <<RESET<< endl;
         command = PRIVATE;
         privateMsgParser(message, privateSocketNo, privateAliasNotFound);
         return command;
     }
     else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
     {
-        cout << "\tCONNECT DETECTED " << endl;
+        // cout <<CYAN<< "\tConnect Detected" << RESET<<endl;
         command = CONNECT;
         return command;
     }
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
-        cout << "\tDISCONNECT DETECTED " << endl;
+        // cout <<CYAN<< "\tDisconnect Detected" <<RESET<< endl;
         command = DISCONNECT;
         return command;
     }
     else if (message.size() >= 4 && message.substr(0, 4) == "EXIT")
     {
-        cout << "\tEXIT DETECTED " << endl;
-        command = DISCONNECT;
+        // cout << "\tEXIT DETECTED " << endl;
+        command = EXIT;
         return command;
     }
     return command;
@@ -302,7 +305,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
     return;
 }
 
-void chatting(int sockSender, char *buffer)
+bool chatting(int sockSender, char *buffer)
 {
     pair<ssize_t, string> receiveReturn;
     ssize_t nSend, nRec;
@@ -310,6 +313,7 @@ void chatting(int sockSender, char *buffer)
     msgType command;
     vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
+    bool returnValue = false;
 
     message = msgParser(CONNECT, "", sockSender);
     globalChat(message);
@@ -329,7 +333,7 @@ void chatting(int sockSender, char *buffer)
         cout << clientList[sockSender] << ": " << message << endl;
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
         message = msgParser(command, message, sockSender);
-        cout << "Sending: " << message << endl;
+        cout << CYAN << "\tSending: " << message << RESET << endl;
 
         switch (command)
         {
@@ -340,13 +344,15 @@ void chatting(int sockSender, char *buffer)
             privateMessage(privateSocketNo, message);
             userNotPresent(privateAliasNotFound, sockSender);
             break;
+        case EXIT:
+            returnValue = true;
         case DISCONNECT:
             globalChat(message);
             disconnectFlag = true;
             break;
         }
     }
-    return;
+    return returnValue;
 }
 
 void clientAlias(int socketNumber, char *buffer)
@@ -375,7 +381,7 @@ void clientAlias(int socketNumber, char *buffer)
         aliasAssigned = true;
     }
     clientList[socketNumber] = name;
-    cout << "Assigned Socket " << socketNumber << " : " << name << endl;
+    cout << YELLOW << "Assigned Socket " << socketNumber << " : " << name << RESET << endl;
     return;
 }
 
@@ -386,10 +392,11 @@ void *handleClient(void *socketDescription)
     pair<ssize_t, string> receiveReturn;
     string message;
     ssize_t receivedByteSize, sentByteSize;
+    bool isEXIT = false;
 
     clientAlias(socketNumber, buffer);
 
-    while (true)
+    while (!isEXIT)
     {
         receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
@@ -406,13 +413,14 @@ void *handleClient(void *socketDescription)
         {
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
-            chatting(socketNumber, buffer);
+            isEXIT = chatting(socketNumber, buffer);
         }
-        else if (message == "EXIT")
+        else if (isEXIT)
         {
             break;
         }
     }
+    cout << YELLOW << clientList[socketNumber] << ": is EXITING" << RESET << endl;
     close(socketNumber);
     free(socketDescription);
     pthread_mutex_lock(&clientCountMutex);
@@ -457,7 +465,7 @@ int main(int argc, char *argv[])
         pthread_mutex_lock(&clientCountMutex);
         if (clientCount >= 5)
         {
-            cout << "Maximum Number of Clients Reached" << endl;
+            cout << RED << "Maximum Number of Clients Reached" << RESET << endl;
             pthread_mutex_unlock(&clientCountMutex);
             continue;
         }
