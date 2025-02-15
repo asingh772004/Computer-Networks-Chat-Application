@@ -11,22 +11,25 @@ This is a multi-client chat application implemented in C++ using a server-client
 ## Features
 
 #### Multi client support:
-* Supports up to 5 simultaneous clients (configurable via MAX_CLIENTS). Extra clients are automatically closed
+* Supports up to 5 simultaneous clients (configurable via MAX_CLIENTS)
+* Extra clients are automatically closed
 
 #### Non-blocking I/O with select():
-* Uses select() to manage new connections and client communications, eliminating the need for multithreading on the server side.
+* Uses select() to manage new connections and client communications, eliminating the need for multithreading on the server side
 
 #### Client Alias Management:
 * Each client must set an alias. If an alias is already taken, the server prompts the client for another alias.
 
 #### Chat Room Join/Leave Mechanism
-* Clients must explicitly join the chat room using the CONNECT command. Once in the chat room, users can broadcast messages or send private messages.
+* Clients must explicitly join the chat room using the CONNECT command
+* Users can send broadcast or private messages in the chat room
 
 #### Broadcast Messaging:
-* Messages sent without a command are broadcast to all clients in the chat room.
+* Messages sent without a command are broadcast to all clients in the chat room
 
 #### Private Messaging:
-* Prefix a message with @username to send a private message to one or more specific users. If the recipient is not found, the sender receives a notification.
+* Prefix a message with @username to send a private message to one or more specific users
+* The sender receives a notificationIf the recipient is not found
 
 #### DISCONNECT and EXIT:
 * Commands to leave the chat room or close the connection respectively
@@ -54,11 +57,12 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## Compilation
 
-### Compile the server
+#### Compile the server
 ```g++ -o server server.cpp -lpthread```
 
-### Compile the client
+#### Compile the client
 ```g++ -o client client.cpp -lpthread -lncurses```
+__make sure client.cpp and terminal.h are in the same directory__
 
 <br>
 
@@ -76,6 +80,8 @@ This is a multi-client chat application implemented in C++ using a server-client
 ```./client <server_ip> <port_number>```
 #### Example:
 ```./client 127.0.0.1 4761```
+
+<br>
 
 ### Commands
 |Command|Description|
