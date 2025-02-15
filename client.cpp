@@ -18,7 +18,7 @@
 #include <pthread.h> // For pthreads (multithreading)
 
 // custom libraries for Chat Terminal
-#include <Terminal.h>
+#include "terminal.h"
 
 using namespace std;
 
