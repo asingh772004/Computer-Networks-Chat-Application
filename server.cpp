@@ -414,9 +414,11 @@ void *handleClient(void *socketDescription)
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
             isEXIT = chatting(socketNumber, buffer);
+            chatRoom.erase(clientList[socketNumber]);
         }
         else if (isEXIT || (message.size() >= 4 && message.substr(0, 4) == "EXIT"))
         {
+            clientList.erase(socketNumber);
             break;
         }
     }
