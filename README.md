@@ -6,14 +6,34 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## Features
 
+### Multi client support:
+* Supports up to 5 simultaneous clients (configurable via MAX_CLIENTS). Extra clients are automatically closed
+
+### Non-blocking I/O with select():
+* Uses select() to manage new connections and client communications, eliminating the need for multithreading on the server side.
+
+### Client Alias Management:
+* Each client must set an alias. If an alias is already taken, the server prompts the client for another alias.
+
+### Chat Room Join/Leave Mechanism
+* Clients must explicitly join the chat room using the CONNECT command. Once in the chat room, users can broadcast messages or send private messages.
+
+### Broadcast Messaging:
+* Messages sent without a command are broadcast to all clients in the chat room.
+
+### Private Messaging:
+* Prefix a message with @username to send a private message to one or more specific users. If the recipient is not found, the sender receives a notification.
+
+### DISCONNECT AND EXIT:
+* Commands to leave the chat room or close the connection respectively
+
+### Customized terminal:
+* ncurses library used for custom terminal with seperate chat and input window, along with scroll option in chat.
+* All client terminal related functions are included in terminal.h header file. Done to avoid collision between inputs and outputs.
+
+  
 * Threaded client handling for scalability and asynchronous inputs and outputs
-* Multi-client support (up to 5 clients at a time)
-* Extra clients are automatically closed
-* Private messaging using @username prefix
-* Broadcast messaging
-* User alias management
-* Connection and disconnection notifications
-* Client terminal divided into chat window and input window with scroll option for chat
+
 
 ## Technologies Used
 
