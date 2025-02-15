@@ -360,9 +360,10 @@ void clientAlias(int socketNumber, char *buffer)
     pair<ssize_t, string> receiveReturn;
     ssize_t receivedByteSize, sentByteSize;
     string name;
-    bool aliasAssigned = false;
-    while (!aliasAssigned)
+    bool aliasNotAssigned;
+    while (aliasNotAssigned)
     {
+        aliasNotAssigned = true;
         sentByteSize = serverObject.sendMessage(socketNumber, "Enter Alias: ");
         receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
@@ -376,9 +377,10 @@ void clientAlias(int socketNumber, char *buffer)
             if (it.second == name)
             {
                 sentByteSize = write(socketNumber, "Alias already taken.", strlen("Alias already taken."));
+                aliasNotAssigned = false;
+                continue;
             }
         }
-        aliasAssigned = true;
     }
     clientList[socketNumber] = name;
     cout << YELLOW << "Assigned Socket " << socketNumber << " : " << name << RESET << endl;
