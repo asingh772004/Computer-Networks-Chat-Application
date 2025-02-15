@@ -4,7 +4,7 @@
 
 using namespace std;
 
-class Terminal
+class terminal
 {
 private:
     WINDOW *chatWin, *inputWin;
@@ -12,8 +12,8 @@ private:
     int chat_scroll_offset = 0;
 
 public:
-    Terminal() { initNcurses(); }
-    ~Terminal() { closeTerminal(); }
+    terminal() { initNcurses(); }
+    ~terminal() { closeTerminal(); }
 
     void initNcurses()
     {
