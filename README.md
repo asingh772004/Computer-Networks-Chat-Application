@@ -48,5 +48,5 @@ Example:
 |CONNECT|Connects the user to the chatroom|
 |DISCONNECT|Disconnects the user from the chatroom|
 |EXIT|Exits the chat application|
-|@username &ltmessage&gt|Sends a private message to a user|
-|&ltmessage&gt|Broadcasts a message to all connected users except the sender|
+|@username &lt message &gt|Sends a private message to a user|
+|&lt message &gt|Broadcasts a message to all connected users except the sender|
