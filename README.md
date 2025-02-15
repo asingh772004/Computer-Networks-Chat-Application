@@ -57,11 +57,14 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## Compilation
 
-#### Compile the server
-```g++ -o server server.cpp -lpthread```
+#### Compiling server
+```g++ server.cpp -o server -lpthread```
 
-#### Compile the client
-```g++ -o client client.cpp -lpthread -lncurses```
+#### Compiling serverSelect
+```g++ serverSelect.cpp -o server```
+
+#### Compiling client
+```g++ client.cpp -o client -lpthread -lncurses```
 *make sure client.cpp and terminal.h are in the same directory*
 
 <br>
@@ -96,14 +99,11 @@ This is a multi-client chat application implemented in C++ using a server-client
 <br>
 
 ## SAMPLE IMAGES
-
-
 #### Server
 ![serverImage](https://github.com/user-attachments/assets/cb52b6ce-da31-4757-b52d-a01b7053218b)
 
 #### First Client
 ![client1Image](https://github.com/user-attachments/assets/55430f41-2ee3-4481-b907-0fbe623e1611)
-
 
 #### Second Client
 ![client1Image](https://github.com/user-attachments/assets/25dccb81-9ef9-4c26-954a-0935a93bb95d)
