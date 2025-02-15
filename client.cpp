@@ -100,7 +100,7 @@ public:
 
             // Calculate the center position for the input text
             int center_x = (COLS - input.length()) / 2;
-            mvwprintw(inputWin, 1, center_x, input.c_str());
+            mvwprintw(inputWin, 1, center_x, "%s", input.c_str());
             wrefresh(inputWin);
         }
 
