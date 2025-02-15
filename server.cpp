@@ -166,11 +166,11 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
     while (index < message.size() && message[index] == '@')
     {
         string username;
-        index++;
+        index++; // skip the @ and go to the next character
         while (index < message.size() && message[index] != ' ')
         {
             username += message[index];
-            index++;
+            index++; // keep traversing to build username string
         }
 
         if (chatRoom.find(username) != chatRoom.end())
@@ -182,10 +182,17 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
         {
             privateAliasNotFound.push_back(username);
         }
-        index++;
+        index++; // skip the ' ' character and collect the message
     }
 
-    message = message.substr(index);
+    if (message.size() >= index)
+    {
+        message = message.substr(index);
+    }
+    else
+    {
+        message = "";
+    }
     return;
 }
 
@@ -202,13 +209,11 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
     {
         command = CONNECT;
-        message = message.substr(7);
         return command;
     }
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
         command = DISCONNECT;
-        message = message.substr(10);
         return command;
     }
     return command;
