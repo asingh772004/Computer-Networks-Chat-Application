@@ -281,6 +281,10 @@ string notPresentMsg(vector<string> &privateAliasNotFound)
 
 void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
+    if (privateAliasNotFound.size() == 0)
+    {
+        return;
+    }
     ssize_t Nsend;
     string message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
     Nsend = serverObject.sendMessage(sockSender, message);
@@ -293,7 +297,6 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 
 void chatting(int sockSender, char *buffer)
 {
-    cout << "Chat Room accessed" << endl;
     pair<ssize_t, string> receiveReturn;
     ssize_t nSend, nRec;
     string message;
@@ -303,6 +306,7 @@ void chatting(int sockSender, char *buffer)
 
     message = msgParser(CONNECT, "", sockSender);
     globalChat(message);
+    cout << message << endl;
     pthread_mutex_unlock(&chatRoomMutex);
 
     bool disconnectFlag = false;
@@ -315,8 +319,12 @@ void chatting(int sockSender, char *buffer)
         nRec = receiveReturn.first;
         message = receiveReturn.second;
 
+        cout << "RECEIVED MESSAGE BY " << clientList[sockSender] << ": " << message << endl;
+
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
         message = msgParser(command, message, sockSender);
+
+        cout << "SENDING MESSAGE: " << message << endl;
         switch (command)
         {
         case BROADCAST:
