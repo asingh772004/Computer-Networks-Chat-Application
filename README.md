@@ -4,15 +4,11 @@
 
 ## Overview
 
-<br>
-
 This is a multi-client chat application implemented in C++ using a server-client model. The server supports multiple clients and allows broadcasting, private messaging, and client management features using POSIX sockets and multithreading.
 
 <br>
 
 ## Features
-
-<br>
 
 #### Multi client support:
 * Supports up to 5 simultaneous clients (configurable via MAX_CLIENTS). Extra clients are automatically closed
@@ -48,8 +44,6 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## Technologies Used
 
-<br>
-
 * C++ (Standard Library, POSIX APIs)
 * Sockets (TCP/IP)
 * pthreads for multithreading
@@ -67,8 +61,6 @@ This is a multi-client chat application implemented in C++ using a server-client
 <br>
 
 ## USAGE
-
-<br>
 
 ### Starting the server
 
