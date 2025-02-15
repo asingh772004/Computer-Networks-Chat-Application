@@ -116,10 +116,10 @@ public:
         close(clientSocket);
     }
 
-    pair<ssize_t, string> recieveMessage(int clientSockNo, char *buffer, ssize_t bytesRead)
+    pair<ssize_t, string> recieveMessage(int clientSockNo, char *buffer)
     {
         bzero(buffer, 256);
-        bytesRead = read(clientSockNo, buffer, sizeof(buffer));
+        ssize_t bytesRead = read(clientSockNo, buffer, sizeof(buffer));
         string message(buffer);
         return {bytesRead, message};
     }
@@ -292,15 +292,15 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 void chatting(int sockSender, char *buffer)
 {
     cout << "Chat Room accessed" << endl;
-    ssize_t n_send, n_rec;
+    pair<ssize_t, string> receiveReturn;
+    ssize_t nSend, nRec;
     string message;
     msgType command;
     vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
 
-    bzero(buffer, BUFFER_SIZE);
-    buffer = msgParser(CONNECT, "", sockSender);
-    globalChat(buffer);
+    message = msgParser(CONNECT, "", sockSender);
+    globalChat(message);
     pthread_mutex_unlock(&chatRoomMutex);
 
     bool disconnectFlag = false;
@@ -308,11 +308,13 @@ void chatting(int sockSender, char *buffer)
     {
         privateSocketNo.clear();
         privateAliasNotFound.clear();
-        bzero(buffer, BUFFER_SIZE);
-        n_rec = read(sockSender, buffer, 256);
-        message = buffer;
+
+        receiveReturn = serverObject.recieveMessage(sockSender, buffer);
+        nRec = receiveReturn.first;
+        message = receiveReturn.second;
+
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
-        buffer = msgParser(command, message, sockSender);
+        message = msgParser(command, message, sockSender);
         switch (command)
         {
         case BROADCAST:
@@ -333,15 +335,16 @@ void chatting(int sockSender, char *buffer)
 
 void clientAlias(int socketNumber, char *buffer)
 {
+    pair<ssize_t, string> receiveReturn;
     ssize_t receivedByteSize, sentByteSize;
     string name;
     bool aliasAssigned = false;
     while (!aliasAssigned)
     {
-        sentByteSize = write(socketNumber, "Enter Alias:", strlen("Enter Alias:"));
-        bzero(buffer, BUFFER_SIZE);
-        receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
-        name = buffer;
+        sentByteSize = serverObject.sendMessage(socketNumber, "Enter Alias: ");
+        receiveReturn = serverObject.recieveMessage(socketNumber, buffer);
+        receivedByteSize = receiveReturn.first;
+        name = receiveReturn.second;
         if (receivedByteSize < 0)
         {
             continue;
@@ -363,32 +366,33 @@ void *handleClient(void *socketDescription)
 {
     int socketNumber = *(int *)socketDescription;
     char buffer[BUFFER_SIZE];
+    pair<ssize_t, string> receiveReturn;
     string message;
     ssize_t receivedByteSize, sentByteSize;
     clientAlias(socketNumber, buffer);
 
-    cout << "Running Server Loop" << endl;
+    // cout << "Running Server Loop" << endl;
 
     while (true)
     {
 
-        cout << "In the loop" << endl;
+        // cout << "In the loop" << endl;
 
-        bzero(buffer, BUFFER_SIZE);
-        receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
+        receiveReturn = serverObject.recieveMessage(socketNumber, buffer);
+        receivedByteSize = receiveReturn.first;
+        message = receiveReturn.second;
         if (receivedByteSize < 0)
         {
             continue;
         }
-        message = buffer;
 
-        sentByteSize = write(socketNumber, "Recieved Message", strlen("Recieved Message"));
+        sentByteSize = serverObject.sendMessage(socketNumber, "Recieved Message");
 
-        cout << message << endl;
+        // cout << message << endl;
         cout << (message.substr(0, 7) == "CONNECT") << endl;
         if (message.substr(0, 7) == "CONNECT")
         {
-            cout << "Connect Loop" << endl;
+            // cout << "Connect Loop" << endl;
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
             chatting(socketNumber, buffer);
