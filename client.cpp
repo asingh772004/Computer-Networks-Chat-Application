@@ -26,7 +26,6 @@ using namespace std;
 #define WHITE "\033[37m"  // White color
 
 #define BUFFER_SIZE 256
-#define BUFFER_BYTES 8 * BUFFER_SIZE
 
 pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -81,10 +80,15 @@ public:
         }
     }
 
+    void closeClient()
+    {
+        close(sockfd);
+    }
+
     pair<ssize_t, string> recieveMessage()
     {
         bzero(buffer, 256);
-        bytesRead = read(sockfd, buffer, BUFFER_BYTES);
+        bytesRead = read(sockfd, buffer, sizeof(buffer));
         string message(buffer);
         return {bytesRead, message};
     }
@@ -92,15 +96,9 @@ public:
     ssize_t sendMessage(string message)
     {
         char *msgPtr = &message[0];
-        bytesSent = write(sockfd, msgPtr, 8 * sizeof(message));
+        bytesSent = write(sockfd, msgPtr, message.size());
         return bytesSent;
     }
-
-    void closeClient()
-    {
-        close(sockfd);
-    }
-
 } clientObject;
 
 void consoleStatement(string message)
@@ -142,7 +140,7 @@ void *writeHandler(void *args)
     string message;
     while (true)
     {
-        cin >> message;
+        getline(cin, message);
         clientObject.sendMessage(message);
         if (message == "EXIT")
         {
