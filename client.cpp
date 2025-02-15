@@ -17,8 +17,8 @@
 // Threading Library
 #include <pthread.h> // For pthreads (multithreading)
 
-// Terminal UI (ncurses)
-#include <ncurses.h> // For ncurses-based UI
+// custom libraries for Chat Terminal
+#include <Terminal.h>
 
 using namespace std;
 
@@ -29,110 +29,7 @@ using namespace std;
 
 #define BUFFER_SIZE 256
 
-class terminal
-{
-public:
-    WINDOW *chatWin;
-    WINDOW *inputWin;
-    pthread_mutex_t consoleLock = PTHREAD_MUTEX_INITIALIZER;
-
-    void initNcurses()
-    {
-        initscr();
-        cbreak();
-        noecho();
-        keypad(stdscr, TRUE);
-        mousemask(0, NULL);
-        mouseinterval(0);
-
-        int chat_height = LINES - 3;
-        chatWin = newwin(chat_height, COLS, 0, 0);
-        inputWin = newwin(3, COLS, chat_height, 0);
-
-        scrollok(chatWin, TRUE);
-        scrollok(inputWin, FALSE);
-        box(inputWin, 0, 0);
-        wrefresh(inputWin);
-    }
-
-    void closeTerminal()
-    {
-        int chat_height, chat_width;
-        getmaxyx(chatWin, chat_height, chat_width);
-        std::vector<std::string> chat_history;
-        for (int i = 0; i < chat_height; i++)
-        {
-            char line[chat_width + 1];
-            mvwinnstr(chatWin, i, 0, line, chat_width);
-            line[chat_width] = '\0';
-            chat_history.push_back(std::string(line));
-        }
-        wclear(inputWin);
-        wrefresh(inputWin);
-        delwin(inputWin);
-        inputWin = nullptr;
-        wresize(chatWin, LINES, COLS);
-        mvwin(chatWin, 0, 0);
-        wrefresh(chatWin);
-        refresh();
-        endwin();
-        for (const auto &line : chat_history)
-        {
-            if (!line.empty() && line.find_first_not_of(' ') != std::string::npos)
-            {
-                std::cout << line << std::endl;
-            }
-        }
-        std::cout << "\033[" << chat_height << "B";
-        system("stty sane");
-    }
-
-    void consoleStatement(const string &message)
-    {
-        pthread_mutex_lock(&consoleLock);
-        wprintw(chatWin, "%s\n", message.c_str());
-        wrefresh(chatWin);
-        pthread_mutex_unlock(&consoleLock);
-    }
-
-    string getInput()
-    {
-        string input;
-        int ch;
-        int max_width = COLS - 4;
-        while (true)
-        {
-            ch = wgetch(inputWin);
-
-            if (ch == '\n')
-            {
-                break;
-            }
-            if (ch == KEY_BACKSPACE || ch == 127)
-            {
-                if (!input.empty())
-                {
-                    input.pop_back();
-                }
-            }
-            else if (ch != ERR && input.length() < max_width)
-            {
-                input += ch;
-            }
-            wclear(inputWin);
-            box(inputWin, 0, 0);
-            int center_y = 1;
-            int start_x = 2;
-            mvwprintw(inputWin, center_y, start_x, "%s", input.c_str());
-            wrefresh(inputWin);
-        }
-        wclear(inputWin);
-        box(inputWin, 0, 0);
-        wrefresh(inputWin);
-        consoleStatement("You: " + input);
-        return input;
-    }
-} terminalObject;
+terminal terminalObject;
 
 void leaveGracefully()
 {
@@ -228,7 +125,7 @@ void *readHandler(void *args)
         }
         else if (bytesRead == 0)
         {
-            terminalObject.consoleStatement("Server Disconnected");
+            terminalObject.consoleStatement("Disconnecting from Server");
             break;
         }
         else
