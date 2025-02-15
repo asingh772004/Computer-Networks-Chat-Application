@@ -23,10 +23,9 @@
 using namespace std;
 
 #define RESET "\033[0m"
-#define YELLOW "\033[33m" // yellow
 #define RED "\033[31m"    // Red color
 #define GREEN "\033[32m"  // Green color
-#define WHITE "\033[37m"  // White color
+#define YELLOW "\033[33m" // Yellow color
 
 #define BUFFER_SIZE 256
 
@@ -43,12 +42,15 @@ public:
         cbreak();
         noecho();
         keypad(stdscr, TRUE);
+        mousemask(0, NULL);
+        mouseinterval(0);
 
         int chat_height = LINES - 3;
         chatWin = newwin(chat_height, COLS, 0, 0);
         inputWin = newwin(3, COLS, chat_height, 0);
 
         scrollok(chatWin, TRUE);
+        scrollok(inputWin, FALSE);
         box(inputWin, 0, 0);
         wrefresh(inputWin);
     }
@@ -243,7 +245,9 @@ void *writeHandler(void *args)
     while (true)
     {
         message = terminalObject.getInput();
+        message += "\n";
         clientObject.sendMessage(message);
+        message.pop_back();
         if (message == "EXIT")
         {
             break;

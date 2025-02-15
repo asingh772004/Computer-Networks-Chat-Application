@@ -19,14 +19,15 @@
 
 using namespace std;
 
-#define GREEN "\033[32m"
-#define RED "\033[31m"
 #define RESET "\033[0m"
+#define RED "\033[31m"    // Red color
+#define GREEN "\033[32m"  // Green color
+#define YELLOW "\033[33m" // Yellow color
 
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
 
-typedef enum msgType
+enum msgType
 {
     BROADCAST,
     CONNECT,
@@ -113,12 +114,27 @@ public:
         close(clientSocket);
     }
 
-    pair<ssize_t, string> recieveMessage(int clientSockNo, char *buffer)
+    pair<ssize_t, string> receiveMessage(int clientSockNo, char *buffer)
     {
-        bzero(buffer, 256);
-        ssize_t bytesRead = read(clientSockNo, buffer, sizeof(buffer));
-        string message(buffer);
-        return {bytesRead, message};
+        string message;
+        ssize_t bytesRead;
+        while (true)
+        {
+            bzero(buffer, 256);
+            bytesRead = read(clientSockNo, buffer, 255);
+            if (bytesRead <= 0)
+            {
+                return {bytesRead, message};
+            }
+            buffer[bytesRead] = '\0';
+            message.append(buffer);
+            if (message.find('\n') != string::npos)
+            {
+                break;
+            }
+        }
+        message.pop_back();
+        return {message.size(), message};
     }
 
     ssize_t sendMessage(int clientSockNo, string message)
@@ -156,7 +172,6 @@ string msgParser(msgType command, string message, int sockSender)
         msg += message;
         break;
     }
-
     return msg;
 }
 
@@ -217,6 +232,12 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
         cout << "\tDISCONNECT DETECTED " << endl;
+        command = DISCONNECT;
+        return command;
+    }
+    else if (message.size() >= 4 && message.substr(0, 4) == "EXIT")
+    {
+        cout << "\tEXIT DETECTED " << endl;
         command = DISCONNECT;
         return command;
     }
@@ -302,16 +323,15 @@ void chatting(int sockSender, char *buffer)
         privateSocketNo.clear();
         privateAliasNotFound.clear();
 
-        receiveReturn = serverObject.recieveMessage(sockSender, buffer);
+        receiveReturn = serverObject.receiveMessage(sockSender, buffer);
         nRec = receiveReturn.first;
         message = receiveReturn.second;
 
-        cout << "RECEIVED MESSAGE BY " << clientList[sockSender] << ": " << message << endl;
-
+        cout << clientList[sockSender] << ": " << message << endl;
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
         message = msgParser(command, message, sockSender);
+        cout << "Sending: " << message << endl;
 
-        cout << "SENDING MESSAGE: " << message << endl;
         switch (command)
         {
         case BROADCAST:
@@ -339,7 +359,7 @@ void clientAlias(int socketNumber, char *buffer)
     while (!aliasAssigned)
     {
         sentByteSize = serverObject.sendMessage(socketNumber, "Enter Alias: ");
-        receiveReturn = serverObject.recieveMessage(socketNumber, buffer);
+        receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
         name = receiveReturn.second;
         if (receivedByteSize < 0)
@@ -356,7 +376,7 @@ void clientAlias(int socketNumber, char *buffer)
         aliasAssigned = true;
     }
     clientList[socketNumber] = name;
-    cout << "Assigned " << socketNumber << " : " << name << endl;
+    cout << "Assigned Socket " << socketNumber << " : " << name << endl;
     return;
 }
 
@@ -367,16 +387,12 @@ void *handleClient(void *socketDescription)
     pair<ssize_t, string> receiveReturn;
     string message;
     ssize_t receivedByteSize, sentByteSize;
-    clientAlias(socketNumber, buffer);
 
-    // cout << "Running Server Loop" << endl;
+    clientAlias(socketNumber, buffer);
 
     while (true)
     {
-
-        // cout << "In the loop" << endl;
-
-        receiveReturn = serverObject.recieveMessage(socketNumber, buffer);
+        receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
         message = receiveReturn.second;
         if (receivedByteSize < 0)
@@ -384,13 +400,11 @@ void *handleClient(void *socketDescription)
             continue;
         }
 
+        cout << YELLOW << clientList[socketNumber] << ": " << message << RESET << endl;
         sentByteSize = serverObject.sendMessage(socketNumber, "Recieved Message");
 
-        // cout << message << endl;
-        cout << (message.substr(0, 7) == "CONNECT") << endl;
         if (message.substr(0, 7) == "CONNECT")
         {
-            // cout << "Connect Loop" << endl;
             pthread_mutex_lock(&chatRoomMutex);
             chatRoom[clientList[socketNumber]] = socketNumber;
             chatting(socketNumber, buffer);
@@ -413,7 +427,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        cout << "Error: Port Number is missing\nExiting..." << endl;
+        cout << RED << "Port Number is missing" << RESET << endl;
         exit(0);
     }
     serverObject.getPort(argv);
