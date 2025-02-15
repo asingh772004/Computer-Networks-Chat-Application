@@ -20,12 +20,12 @@ This is a multi-client chat application implemented in C++ using a server-client
 * pthreads for multithreading
 * ANSI escape sequences for colored terminal output
 
-# Compilation
+## Compilation
 
-## Compile the server
+### Compile the server
 ```g++ -o server server.cpp -lpthread```
 
-## Compile the client
+### Compile the client
 ```g++ -o client client.cpp -lpthread -lncurses```
 
 ## USAGE
