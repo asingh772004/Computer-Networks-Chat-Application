@@ -124,7 +124,7 @@ public:
         return {bytesRead, message};
     }
 
-    ssize_t sendMessage(int clientSockNo, string message, char *buffer)
+    ssize_t sendMessage(int clientSockNo, string message)
     {
         ssize_t bytesSent;
         char *msgPtr = &message[0];
@@ -217,7 +217,7 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     return command;
 }
 
-void privateMessage(vector<int> &sockReceiver, char *msg)
+void privateMessage(vector<int> &sockReceiver, char *buffer, string message)
 {
     ssize_t Nsend;
     for (auto it : sockReceiver)
@@ -248,12 +248,12 @@ void broadcast(int sockSender, char *message)
     return;
 }
 
-void globalChat(char *message)
+void globalChat(char *buffer)
 {
     ssize_t Nsend;
     for (auto it : chatRoom)
     {
-        Nsend = write(it.second, message, strlen(message));
+        Nsend = write(it.second, buffer, strlen(buffer));
         if (Nsend < 0)
         {
             /*error */
@@ -280,7 +280,7 @@ string notPresentMsg(vector<string> &privateAliasNotFound)
 void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     ssize_t Nsend;
-    string = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
+    string message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
     Nsend = write(sockSender, message, strlen(message));
     if (Nsend < 0)
     {
@@ -308,7 +308,7 @@ void chatting(int sockSender, char *buffer)
     {
         privateSocketNo.clear();
         privateAliasNotFound.clear();
-        bzero(buffer, BUFFER_BYTES);
+        bzero(buffer, BUFFER_SIZE);
         n_rec = read(sockSender, buffer, 256);
         message = buffer;
         command = commandHandler(message, sockSender, privateSocketNo, privateAliasNotFound);
@@ -328,7 +328,6 @@ void chatting(int sockSender, char *buffer)
             break;
         }
     }
-    print(9);
     return;
 }
 
@@ -340,7 +339,7 @@ void clientAlias(int socketNumber, char *buffer)
     while (!aliasAssigned)
     {
         sentByteSize = write(socketNumber, "Enter Alias:", strlen("Enter Alias:"));
-        bzero(buffer, BUFFER_BYTES);
+        bzero(buffer, BUFFER_SIZE);
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         name = buffer;
         if (receivedByteSize < 0)
