@@ -95,7 +95,7 @@ public:
     ssize_t sendMessage(string message)
     {
         char *msgPtr = &message[0];
-        bytesSent = write(sockfd, msgPtr, message.size());
+        bytesSent = write(sockfd, msgPtr, sizeof(message));
         return bytesSent;
     }
 } clientObject;

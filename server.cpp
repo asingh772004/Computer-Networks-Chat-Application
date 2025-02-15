@@ -125,7 +125,7 @@ public:
     {
         ssize_t bytesSent;
         char *msgPtr = &message[0];
-        bytesSent = write(clientSockNo, msgPtr, message.size());
+        bytesSent = write(clientSockNo, msgPtr, sizeof(message));
         return bytesSent;
     }
 } serverObject;
@@ -229,10 +229,6 @@ void privateMessage(vector<int> &sockReceiver, string message)
     for (auto clientSocketNo : sockReceiver)
     {
         Nsend = serverObject.sendMessage(clientSocketNo, message);
-        if (Nsend < 0)
-        {
-            /*error */
-        }
     }
     return;
 }
@@ -245,10 +241,6 @@ void broadcast(int sockSender, char *message)
         if (clientDetails.second != sockSender)
         {
             Nsend = serverObject.sendMessage(clientDetails.second, message);
-            if (Nsend < 0)
-            {
-                /*error */
-            }
         }
     }
     return;
@@ -260,15 +252,10 @@ void globalChat(string message)
     for (auto clientDetails : chatRoom)
     {
         Nsend = serverObject.sendMessage(clientDetails.second, message);
-        if (Nsend < 0)
-        {
-            /*error */
-        }
     }
     return;
 }
 
-// to be added : Users Not Present char* message maker
 string notPresentMsg(vector<string> &privateAliasNotFound)
 {
     string msg = "";
@@ -290,12 +277,8 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
         return;
     }
     ssize_t Nsend;
-    string message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
+    string message = notPresentMsg(privateAliasNotFound);
     Nsend = serverObject.sendMessage(sockSender, message);
-    if (Nsend < 0)
-    {
-        /*error */
-    }
     return;
 }
 
@@ -373,6 +356,7 @@ void clientAlias(int socketNumber, char *buffer)
         aliasAssigned = true;
     }
     clientList[socketNumber] = name;
+    cout << "Assigned " << socketNumber << " : " << name << endl;
     return;
 }
 
