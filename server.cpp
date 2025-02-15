@@ -26,7 +26,6 @@ using namespace std;
 
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
-#define BUFFER_BYTES 8 * BUFFER_SIZE
 
 typedef enum msgType
 {
@@ -41,12 +40,6 @@ pthread_mutex_t clientCountMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t chatRoomMutex = PTHREAD_MUTEX_INITIALIZER;
 map<int, string> clientList;
 map<string, int> chatRoom;
-
-void print(int number)
-{
-    cout << "Hello " << number << endl;
-    return;
-}
 
 class server
 {
@@ -122,9 +115,25 @@ public:
     {
         close(clientSocket);
     }
+
+    pair<ssize_t, string> recieveMessage(int clientSockNo, char *buffer, ssize_t bytesRead)
+    {
+        bzero(buffer, 256);
+        bytesRead = read(clientSockNo, buffer, sizeof(buffer));
+        string message(buffer);
+        return {bytesRead, message};
+    }
+
+    ssize_t sendMessage(int clientSockNo, string message, char *buffer)
+    {
+        ssize_t bytesSent;
+        char *msgPtr = &message[0];
+        bytesSent = write(clientSockNo, msgPtr, message.size());
+        return bytesSent;
+    }
 } serverObject;
 
-char *msgParser(msgType command, string message, int sockSender)
+string msgParser(msgType command, string message, int sockSender)
 {
     string msg;
     string username = clientList[sockSender];
@@ -151,10 +160,7 @@ char *msgParser(msgType command, string message, int sockSender)
         break;
     }
 
-    char *dynamicMsg = new char[msg.size() + 1];
-    strcpy(dynamicMsg, msg.c_str());
-    print(1);
-    return dynamicMsg;
+    return msg;
 }
 
 void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound)
@@ -183,7 +189,6 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
     }
 
     message = message.substr(index);
-    print(2);
     return;
 }
 
@@ -209,7 +214,6 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
         message = message.substr(10);
         return command;
     }
-    print(3);
     return command;
 }
 
@@ -224,7 +228,6 @@ void privateMessage(vector<int> &sockReceiver, char *msg)
             /*error */
         }
     }
-    print(4);
     return;
 }
 
@@ -242,7 +245,6 @@ void broadcast(int sockSender, char *message)
             }
         }
     }
-    print(5);
     return;
 }
 
@@ -257,12 +259,11 @@ void globalChat(char *message)
             /*error */
         }
     }
-    print(6);
     return;
 }
 
 // to be added : Users Not Present char* message maker
-char *notPresentMsg(vector<string> &privateAliasNotFound)
+string notPresentMsg(vector<string> &privateAliasNotFound)
 {
     string msg = "";
     for (auto username : privateAliasNotFound)
@@ -273,22 +274,18 @@ char *notPresentMsg(vector<string> &privateAliasNotFound)
     }
 
     msg += "were not found in the Chat Room.";
-    char *dynamicMsg = new char[msg.size() + 1];
-    strcpy(dynamicMsg, msg.c_str());
-    print(7);
-    return dynamicMsg;
+    return msg;
 }
 
 void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     ssize_t Nsend;
-    char *message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
+    string = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
     Nsend = write(sockSender, message, strlen(message));
     if (Nsend < 0)
     {
         /*error */
     }
-    print(8);
     return;
 }
 
@@ -301,7 +298,7 @@ void chatting(int sockSender, char *buffer)
     vector<int> privateSocketNo;
     vector<string> privateAliasNotFound;
 
-    bzero(buffer, BUFFER_BYTES);
+    bzero(buffer, BUFFER_SIZE);
     buffer = msgParser(CONNECT, "", sockSender);
     globalChat(buffer);
     pthread_mutex_unlock(&chatRoomMutex);
@@ -360,7 +357,6 @@ void clientAlias(int socketNumber, char *buffer)
         aliasAssigned = true;
     }
     clientList[socketNumber] = name;
-    print(10);
     return;
 }
 
@@ -379,7 +375,7 @@ void *handleClient(void *socketDescription)
 
         cout << "In the loop" << endl;
 
-        bzero(buffer, BUFFER_BYTES);
+        bzero(buffer, BUFFER_SIZE);
         receivedByteSize = read(socketNumber, buffer, BUFFER_BYTES);
         if (receivedByteSize < 0)
         {
@@ -409,7 +405,6 @@ void *handleClient(void *socketDescription)
     clientCount--;
     pthread_mutex_unlock(&clientCountMutex);
     pthread_exit(NULL);
-    print(11);
     return NULL;
 }
 
