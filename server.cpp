@@ -395,7 +395,7 @@ void *handleClient(void *socketDescription)
 
     clientAlias(socketNumber, buffer);
 
-    while (!isEXIT || !(message.size() >= 4 && message.substr(0, 4) == "EXIT"))
+    while (!isEXIT)
     {
         receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
         receivedByteSize = receiveReturn.first;
@@ -417,11 +417,11 @@ void *handleClient(void *socketDescription)
         }
         else if (isEXIT || (message.size() >= 4 && message.substr(0, 4) == "EXIT"))
         {
-            clientList.erase(socketNumber);
-            break;
+            isEXIT = true;
         }
     }
     cout << YELLOW << clientList[socketNumber] << ": is EXITING" << RESET << endl;
+    clientList.erase(socketNumber);
     close(socketNumber);
     free(socketDescription);
     pthread_mutex_lock(&clientCountMutex);
