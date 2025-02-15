@@ -22,18 +22,18 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## Compilation
 
-  ### Compile the server
+### Compile the server
 ```g++ -o server server.cpp -lpthread```
 
-  ### Compile the client
+### Compile the client
 ```g++ -o client client.cpp -lpthread -lncurses```
 
 ## USAGE
-  ### Starting the server
+### Starting the server
 
-  #### Run the server with a specified port number:
+#### Run the server with a specified port number:
 ```./server <port_number>```
-  #### Example:
+#### Example:
 ```./server 8080```
 
 ### Connecting clients
