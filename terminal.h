@@ -129,9 +129,9 @@ public:
                 }
                 continue;
             }
-            else if (ch == KEY_LEFT || ch == KEY_RIGHT || ch==KEY_HOME || ch==KEY_END || ch==KEY_IC || ch==KEY_DC)
+            else if (ch == KEY_LEFT || ch == KEY_RIGHT || ch == KEY_HOME || ch == KEY_END || ch == KEY_IC || ch == KEY_DC)
             {
-                // Ignore left and right arrow keys
+                // Ignore Irrelevant Keys
                 continue;
             }
             else if (ch != ERR && input.length() < max_width)
@@ -162,6 +162,4 @@ public:
         delwin(inputWin);
         endwin();
     }
-
 };
-
