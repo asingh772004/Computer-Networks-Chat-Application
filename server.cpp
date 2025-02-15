@@ -132,7 +132,7 @@ public:
 
 string msgParser(msgType command, string message, int sockSender)
 {
-    string msg;
+    string msg = "";
     string username = clientList[sockSender];
     switch (command)
     {
@@ -152,7 +152,7 @@ string msgParser(msgType command, string message, int sockSender)
         break;
 
     case BROADCAST:
-        msg += "[" + username + "is Broadcasting] ";
+        msg += "[" + username + " is Broadcasting] ";
         msg += message;
         break;
     }
@@ -200,19 +200,23 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
 {
     msgType command = BROADCAST;
 
+    cout << "\tDEBUG: " << message << endl;
     if (message[0] == '@')
     {
+        cout << "\tPRIVATE DETECTED " << endl;
         command = PRIVATE;
         privateMsgParser(message, privateSocketNo, privateAliasNotFound);
         return command;
     }
     else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
     {
+        cout << "\tCONNECT DETECTED " << endl;
         command = CONNECT;
         return command;
     }
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
+        cout << "\tDISCONNECT DETECTED " << endl;
         command = DISCONNECT;
         return command;
     }
