@@ -215,7 +215,6 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
 {
     msgType command = BROADCAST;
 
-    cout << "\tDEBUG: " << message << endl;
     if (message[0] == '@')
     {
         cout << "\tPRIVATE DETECTED " << endl;
@@ -254,7 +253,7 @@ void privateMessage(vector<int> &sockReceiver, string message)
     return;
 }
 
-void broadcast(int sockSender, char *message)
+void broadcast(int sockSender, string message)
 {
     ssize_t Nsend;
     for (auto clientDetails : chatRoom)
@@ -335,14 +334,14 @@ void chatting(int sockSender, char *buffer)
         switch (command)
         {
         case BROADCAST:
-            broadcast(sockSender, buffer);
+            broadcast(sockSender, message);
             break;
         case PRIVATE:
-            privateMessage(privateSocketNo, buffer);
+            privateMessage(privateSocketNo, message);
             userNotPresent(privateAliasNotFound, sockSender);
             break;
         case DISCONNECT:
-            globalChat(buffer);
+            globalChat(message);
             disconnectFlag = true;
             break;
         }
