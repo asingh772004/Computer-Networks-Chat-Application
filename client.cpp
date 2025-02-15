@@ -14,6 +14,9 @@
 #include <netinet/in.h> // For sockaddr_in structure
 #include <netdb.h>      // For getaddrinfo(), gethostbyname(), etc.
 
+// Threading Library
+#include <pthread.h> // For pthreads (multithreading)
+
 using namespace std;
 
 #define RESET "\033[0m"
