@@ -31,15 +31,15 @@ This is a multi-client chat application implemented in C++ using a server-client
 ## USAGE
 
 ### Starting the server
-Run the server with a specified port number:
+#### Run the server with a specified port number:
 ```./server <port_number>```
-Example:
+#### Example:
 ```./server 8080```
 
 ### Connecting clients
-Run the client and specify the server IP and port:
+#### Run the client and specify the server IP and port:
 ```./client <server_ip> <port_number>```
-Example:
+#### Example:
 ```./client 127.0.0.1 8080```
 
 ### Commands
