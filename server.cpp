@@ -217,12 +217,12 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     return command;
 }
 
-void privateMessage(vector<int> &sockReceiver, char *buffer, string message)
+void privateMessage(vector<int> &sockReceiver, string message)
 {
     ssize_t Nsend;
-    for (auto it : sockReceiver)
+    for (auto clientSocketNo : sockReceiver)
     {
-        Nsend = write(it, msg, strlen(msg));
+        Nsend = serverObject.sendMessage(clientSocketNo, message);
         if (Nsend < 0)
         {
             /*error */
@@ -234,11 +234,11 @@ void privateMessage(vector<int> &sockReceiver, char *buffer, string message)
 void broadcast(int sockSender, char *message)
 {
     ssize_t Nsend;
-    for (auto it : chatRoom)
+    for (auto clientDetails : chatRoom)
     {
-        if (it.second != sockSender)
+        if (clientDetails.second != sockSender)
         {
-            Nsend = write(it.second, message, strlen(message));
+            Nsend = serverObject.sendMessage(clientDetails.second, message);
             if (Nsend < 0)
             {
                 /*error */
@@ -248,12 +248,12 @@ void broadcast(int sockSender, char *message)
     return;
 }
 
-void globalChat(char *buffer)
+void globalChat(string message)
 {
     ssize_t Nsend;
-    for (auto it : chatRoom)
+    for (auto clientDetails : chatRoom)
     {
-        Nsend = write(it.second, buffer, strlen(buffer));
+        Nsend = serverObject.sendMessage(clientDetails.second, message);
         if (Nsend < 0)
         {
             /*error */
@@ -281,7 +281,7 @@ void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     ssize_t Nsend;
     string message = notPresentMsg(privateAliasNotFound); // Users Not Present char* message maker called here
-    Nsend = write(sockSender, message, strlen(message));
+    Nsend = serverObject.sendMessage(sockSender, message);
     if (Nsend < 0)
     {
         /*error */
