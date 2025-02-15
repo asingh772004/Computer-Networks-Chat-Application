@@ -14,7 +14,7 @@
 #include <netinet/in.h> // For sockaddr_in structure
 #include <netdb.h>      // For getaddrinfo(), gethostbyname(), etc.
 
-// No threading library is needed since select() is used.
+// No threading library is needed since we're using select().
 
 using namespace std;
 
@@ -36,23 +36,120 @@ enum msgType
     EXIT
 };
 
-// Global maps to manage client aliases.
-// clientList: maps socket number to alias (empty if not set)
-// chatRoom: maps alias to socket number (only when client has joined the chat)
-map<int, string> clientList;
-map<string, int> chatRoom;
+int clientCount = 0;
+map<int, string> clientList; // Maps socket to alias (empty until assigned)
+map<string, int> chatRoom;   // Maps alias to socket (only if in chat room)
 
-// Function declarations
-string msgParser(msgType command, string message, int sockSender);
-void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound);
-msgType commandHandler(string &message, int sockSender, vector<int> &privateSocketNo, vector<string> &privateAliasNotFound);
-void privateMessage(const vector<int> &sockReceiver, string message);
-void broadcast(int sockSender, string message);
-void globalChat(string message);
-string notPresentMsg(const vector<string> &privateAliasNotFound);
-void userNotPresent(const vector<string> &privateAliasNotFound, int sockSender);
-bool isAliasTaken(const string &alias);
-void handleClientAlias(int clientSock, char *buffer);
+class server
+{
+public:
+    int port, sockfd, connectid, bindid, listenid;
+    int connfd; // used temporarily during accept()
+    struct sockaddr_in serv_addr, cli_addr;
+
+    void getPort(char *argv[])
+    {
+        port = atoi(argv[1]);
+    }
+
+    void socketNumber()
+    {
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0)
+        {
+            cout << RED << "Socket Creation Failed" << RESET << endl;
+            exit(0);
+        }
+        else
+        {
+            cout << GREEN << "Socket was successfully created." << RESET << endl;
+        }
+    }
+
+    void socketBind()
+    {
+        bzero(&serv_addr, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = htons(INADDR_ANY);
+        serv_addr.sin_port = htons(port);
+        bindid = bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        if (bindid < 0)
+        {
+            cout << RED << "Server socket bind failed." << RESET << endl;
+            exit(0);
+        }
+        else
+            cout << GREEN << "Server binded successfully." << RESET << endl;
+    }
+
+    void serverListen()
+    {
+        listenid = listen(sockfd, 20);
+        if (listenid != 0)
+        {
+            cout << RED << "Server listen failed" << RESET << endl;
+            exit(0);
+        }
+        else
+            cout << GREEN << "Server is listening" << RESET << endl;
+    }
+
+    // Accept a new client connection and return its socket descriptor.
+    int acceptClient()
+    {
+        socklen_t clilen = sizeof(cli_addr);
+        int newSock = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+        if (newSock < 0)
+        {
+            cout << RED << "Server accept failed" << RESET << endl;
+            return -1;
+        }
+        else
+        {
+            cout << GREEN << "Server-Client Connection Established" << RESET << endl;
+        }
+        return newSock;
+    }
+
+    void closeServer(int clientSocket)
+    {
+        close(clientSocket);
+    }
+
+    // Receives a message from a client. It reads until a newline is found.
+    pair<ssize_t, string> receiveMessage(int clientSockNo, char *buffer)
+    {
+        string message;
+        ssize_t bytesRead;
+        while (true)
+        {
+            bzero(buffer, BUFFER_SIZE);
+            bytesRead = read(clientSockNo, buffer, BUFFER_SIZE - 1);
+            if (bytesRead <= 0)
+            {
+                return {bytesRead, message};
+            }
+            buffer[bytesRead] = '\0';
+            message.append(buffer);
+            if (message.find('\n') != string::npos)
+            {
+                break;
+            }
+        }
+        if (!message.empty())
+            message.pop_back(); // remove trailing newline
+        return {message.size(), message};
+    }
+
+    // Sends a message to the specified client.
+    ssize_t sendMessage(int clientSockNo, string message)
+    {
+        ssize_t bytesSent;
+        // Use message.size() rather than sizeof(message)
+        bytesSent = write(clientSockNo, message.c_str(), message.size());
+        return bytesSent;
+    }
+} serverObject;
 
 string msgParser(msgType command, string message, int sockSender)
 {
@@ -62,20 +159,27 @@ string msgParser(msgType command, string message, int sockSender)
     {
     case CONNECT:
         msg += username;
-        msg += " has joined the ChatRoom.\n";
+        msg += " has joined the ChatRoom\n";
         break;
+
     case DISCONNECT:
+        msg += username;
+        msg += " has left the ChatRoom\n";
+        break;
+
     case EXIT:
         msg += username;
-        msg += " has left the ChatRoom.\n";
+        msg += " has left the ChatRoom\n";
         break;
+
     case PRIVATE:
-        msg += "[" + username + " (private)]: ";
+        msg += "[" + username + "] ";
         msg += message;
         msg += "\n";
         break;
+
     case BROADCAST:
-        msg += "[" + username + "]: ";
+        msg += "[" + username + ", to ALL] ";
         msg += message;
         msg += "\n";
         break;
@@ -89,22 +193,22 @@ void privateMsgParser(string &message, vector<int> &privateSocketNo, vector<stri
     while (index < message.size() && message[index] == '@')
     {
         string username;
-        index++; // skip the '@'
+        index++; // skip the @
         while (index < message.size() && message[index] != ' ')
         {
-            username.push_back(message[index]);
-            index++;
+            username += message[index];
+            index++; // build the username string
         }
         if (chatRoom.find(username) != chatRoom.end())
         {
-            privateSocketNo.push_back(chatRoom[username]);
+            int sock = chatRoom[username];
+            privateSocketNo.push_back(sock);
         }
         else
         {
             privateAliasNotFound.push_back(username);
         }
-        while (index < message.size() && message[index] == ' ')
-            index++;
+        index++; // skip the space
     }
     if (index < message.size())
         message = message.substr(index);
@@ -139,90 +243,89 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
     return command;
 }
 
-void privateMessage(const vector<int> &sockReceiver, string message)
+void privateMessage(vector<int> &sockReceiver, string message)
 {
+    ssize_t Nsend;
     for (auto clientSocketNo : sockReceiver)
     {
-        send(clientSocketNo, message.c_str(), message.size(), 0);
+        Nsend = serverObject.sendMessage(clientSocketNo, message);
     }
 }
 
 void broadcast(int sockSender, string message)
 {
+    ssize_t Nsend;
     for (auto clientDetails : chatRoom)
     {
         if (clientDetails.second != sockSender)
         {
-            send(clientDetails.second, message.c_str(), message.size(), 0);
+            Nsend = serverObject.sendMessage(clientDetails.second, message);
         }
     }
 }
 
 void globalChat(string message)
 {
+    ssize_t Nsend;
     for (auto clientDetails : chatRoom)
     {
-        send(clientDetails.second, message.c_str(), message.size(), 0);
+        Nsend = serverObject.sendMessage(clientDetails.second, message);
     }
 }
 
-string notPresentMsg(const vector<string> &privateAliasNotFound)
+string notPresentMsg(vector<string> &privateAliasNotFound)
 {
     string msg = "";
-    for (size_t i = 0; i < privateAliasNotFound.size(); i++)
+    for (auto username : privateAliasNotFound)
     {
-        if (i != 0)
+        if (username != privateAliasNotFound[0])
             msg += ", ";
-        msg += privateAliasNotFound[i];
+        msg += username;
     }
     msg += " were not found in the Chat Room.\n";
     return msg;
 }
 
-void userNotPresent(const vector<string> &privateAliasNotFound, int sockSender)
+void userNotPresent(vector<string> &privateAliasNotFound, int sockSender)
 {
     if (privateAliasNotFound.empty())
         return;
     string message = notPresentMsg(privateAliasNotFound);
-    send(sockSender, message.c_str(), message.size(), 0);
+    serverObject.sendMessage(sockSender, message);
 }
 
-bool isAliasTaken(const string &alias)
+// Processes alias assignment for a client that hasn't yet set an alias.
+void clientAlias(int socketNumber, char *buffer)
 {
-    for (auto it : clientList)
-    {
-        if (it.second == alias)
-            return true;
-    }
-    return false;
-}
-
-void handleClientAlias(int clientSock, char *buffer)
-{
+    pair<ssize_t, string> receiveReturn;
+    ssize_t receivedByteSize, sentByteSize;
     string name;
     bool reEnterAlias = true;
     while (reEnterAlias)
     {
         reEnterAlias = false;
-        string prompt = "Enter Alias: ";
-        send(clientSock, prompt.c_str(), prompt.size(), 0);
-        memset(buffer, 0, BUFFER_SIZE);
-        int bytesRead = recv(clientSock, buffer, BUFFER_SIZE - 1, 0);
-        if (bytesRead <= 0)
-            continue;
-        buffer[bytesRead] = '\0';
-        name = string(buffer);
+        sentByteSize = serverObject.sendMessage(socketNumber, "Enter Alias: ");
+        receiveReturn = serverObject.receiveMessage(socketNumber, buffer);
+        receivedByteSize = receiveReturn.first;
+        name = receiveReturn.second;
+        if (receivedByteSize <= 0)
+            return;
+        // Remove any newline/carriage return characters.
         name.erase(remove(name.begin(), name.end(), '\n'), name.end());
         name.erase(remove(name.begin(), name.end(), '\r'), name.end());
-        if (isAliasTaken(name))
+        for (auto it : clientList)
         {
-            string taken = "Alias already taken.\n";
-            send(clientSock, taken.c_str(), taken.size(), 0);
-            reEnterAlias = true;
+            if (it.second == name)
+            {
+                sentByteSize = serverObject.sendMessage(socketNumber, "Alias already taken.\n");
+                reEnterAlias = true;
+                break;
+            }
         }
     }
-    clientList[clientSock] = name;
-    cout << YELLOW << "Assigned Socket " << clientSock << " : " << name << RESET << endl;
+    clientList[socketNumber] = name;
+    sentByteSize = serverObject.sendMessage(socketNumber, "Alias Assigned\n");
+    cout << YELLOW << "Assigned Socket " << socketNumber << " : " << name << RESET << endl;
 }
 
 int main(int argc, char *argv[])
@@ -232,69 +335,34 @@ int main(int argc, char *argv[])
         cout << RED << "Port Number is missing" << RESET << endl;
         exit(0);
     }
-    int port = atoi(argv[1]);
-
-    // Create the listening socket.
-    int serverSock = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSock < 0)
+    serverObject.getPort(argv);
+    serverObject.socketNumber();
+    if (serverObject.sockfd < 0)
     {
-        cout << RED << "Socket Creation Failed" << RESET << endl;
         exit(0);
     }
-    else
+    serverObject.socketBind();
+    if (serverObject.bindid < 0)
     {
-        cout << GREEN << "Socket was successfully created." << RESET << endl;
-    }
-
-    // Set socket options.
-    int opt = 1;
-    if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-    {
-        cout << RED << "setsockopt failed" << RESET << endl;
         exit(0);
     }
-
-    // Bind the socket.
-    sockaddr_in serv_addr;
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
-
-    if (bind(serverSock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    serverObject.serverListen();
+    if (serverObject.listenid != 0)
     {
-        cout << RED << "Server socket bind failed." << RESET << endl;
         exit(0);
     }
-    else
-    {
-        cout << GREEN << "Server binded successfully." << RESET << endl;
-    }
-
-    // Listen on the socket.
-    if (listen(serverSock, MAX_CLIENTS) < 0)
-    {
-        cout << RED << "Server listen failed" << RESET << endl;
-        exit(0);
-    }
-    else
-    {
-        cout << GREEN << "Server is listening" << RESET << endl;
-    }
-
     cout << string(50, '-') << endl;
 
     // Set up select() variables.
     fd_set master_set, read_fds;
     FD_ZERO(&master_set);
     FD_ZERO(&read_fds);
-
-    FD_SET(serverSock, &master_set);
-    int fdmax = serverSock;
+    FD_SET(serverObject.sockfd, &master_set);
+    int fdmax = serverObject.sockfd;
 
     char buffer[BUFFER_SIZE];
 
-    // Main loop using select().
+    // Main loop using select()
     while (true)
     {
         read_fds = master_set;
@@ -308,73 +376,69 @@ int main(int argc, char *argv[])
         {
             if (FD_ISSET(i, &read_fds))
             {
-                if (i == serverSock)
+                // New connection on the server socket.
+                if (i == serverObject.sockfd)
                 {
-                    // Accept new connection.
-                    sockaddr_in cli_addr;
-                    socklen_t clilen = sizeof(cli_addr);
-                    int newSock = accept(serverSock, (struct sockaddr *)&cli_addr, &clilen);
+                    int newSock = serverObject.acceptClient();
                     if (newSock < 0)
-                    {
-                        cout << RED << "Server accept failed" << RESET << endl;
                         continue;
-                    }
-                    else
-                    {
-                        cout << GREEN << "Server-Client Connection Established on socket " << newSock << RESET << endl;
-                    }
-                    if ((int)clientList.size() >= MAX_CLIENTS)
+                    if (clientCount >= MAX_CLIENTS)
                     {
                         cout << RED << "Maximum Number of Clients Reached" << RESET << endl;
                         string fullMsg = "Server is full. Try again later.\n";
-                        send(newSock, fullMsg.c_str(), fullMsg.size(), 0);
+                        serverObject.sendMessage(newSock, fullMsg);
                         close(newSock);
                         continue;
                     }
                     FD_SET(newSock, &master_set);
                     if (newSock > fdmax)
                         fdmax = newSock;
-                    clientList[newSock] = "";
-                    // Prompt for alias.
-                    handleClientAlias(newSock, buffer);
+                    clientCount++;
+                    clientList[newSock] = ""; // Alias not assigned yet.
+                    // Immediately prompt for alias.
+                    serverObject.sendMessage(newSock, "Enter Alias: ");
                 }
                 else
                 {
                     // Data from an existing client.
                     memset(buffer, 0, BUFFER_SIZE);
-                    int bytesRead = recv(i, buffer, BUFFER_SIZE - 1, 0);
+                    pair<ssize_t, string> receiveReturn = serverObject.receiveMessage(i, buffer);
+                    ssize_t bytesRead = receiveReturn.first;
+                    string message = receiveReturn.second;
                     if (bytesRead <= 0)
                     {
-                        if (bytesRead == 0)
-                            cout << YELLOW << "Socket " << i << " hung up." << RESET << endl;
-                        else
-                            cout << RED << "recv error on socket " << i << RESET << endl;
-
-                        // Broadcast disconnection if client was in chat.
-                        if (chatRoom.find(clientList[i]) != chatRoom.end())
+                        // Client disconnected.
+                        cout << YELLOW << "Socket " << i << " hung up." << RESET << endl;
+                        // If the client was in the chat room, broadcast the disconnection.
+                        if (clientList.find(i) != clientList.end())
                         {
-                            string leaveMsg = msgParser(DISCONNECT, "", i);
-                            globalChat(leaveMsg);
-                            chatRoom.erase(clientList[i]);
+                            string alias = clientList[i];
+                            if (chatRoom.find(alias) != chatRoom.end())
+                            {
+                                string leaveMsg = msgParser(DISCONNECT, "", i);
+                                globalChat(leaveMsg);
+                                chatRoom.erase(alias);
+                            }
                         }
                         close(i);
                         FD_CLR(i, &master_set);
                         clientList.erase(i);
+                        clientCount--;
                     }
                     else
                     {
-                        buffer[bytesRead] = '\0';
-                        string message(buffer);
+                        // Remove newline/carriage return characters.
                         message.erase(remove(message.begin(), message.end(), '\n'), message.end());
                         message.erase(remove(message.begin(), message.end(), '\r'), message.end());
 
+                        // If alias not yet assigned, treat the incoming message as the alias.
                         if (clientList[i] == "")
                         {
-                            handleClientAlias(i, buffer);
+                            clientAlias(i, buffer);
                         }
                         else if (chatRoom.find(clientList[i]) == chatRoom.end())
                         {
-                            // Client must type "CONNECT" to join the chat room.
+                            // Client is not in the chat room.
                             if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
                             {
                                 chatRoom[clientList[i]] = i;
@@ -382,17 +446,27 @@ int main(int argc, char *argv[])
                                 globalChat(joinMsg);
                                 cout << joinMsg;
                                 string confirm = "You have joined the chat room.\n";
-                                send(i, confirm.c_str(), confirm.size(), 0);
+                                serverObject.sendMessage(i, confirm);
+                            }
+                            else if (message.size() >= 4 && message.substr(0, 4) == "EXIT")
+                            {
+                                string exitMsg = msgParser(EXIT, "", i);
+                                serverObject.sendMessage(i, exitMsg);
+                                close(i);
+                                FD_CLR(i, &master_set);
+                                clientList.erase(i);
+                                clientCount--;
                             }
                             else
                             {
-                                string prompt = "Type CONNECT to join the chat room.\n";
-                                send(i, prompt.c_str(), prompt.size(), 0);
+                                // Not in chat room: simply acknowledge or prompt.
+                                string prompt = "Type CONNECT to join the chat room or EXIT to disconnect.\n";
+                                serverObject.sendMessage(i, prompt);
                             }
                         }
                         else
                         {
-                            // Process chat messages.
+                            // Client is in the chat room: process chat commands.
                             vector<int> privateSocketNo;
                             vector<string> privateAliasNotFound;
                             msgType command = commandHandler(message, i, privateSocketNo, privateAliasNotFound);
@@ -407,23 +481,21 @@ int main(int argc, char *argv[])
                                 privateMessage(privateSocketNo, parsedMsg);
                                 userNotPresent(privateAliasNotFound, i);
                                 break;
-                            case EXIT:
                             case DISCONNECT:
-                            {
-                                string alias = clientList[i];
+                                globalChat(parsedMsg);
+                                chatRoom.erase(clientList[i]);
+                                break;
+                            case EXIT:
                                 globalChat(parsedMsg);
                                 close(i);
                                 FD_CLR(i, &master_set);
                                 clientList.erase(i);
-                                chatRoom.erase(alias);
+                                chatRoom.erase(clientList[i]); // (if present)
+                                clientCount--;
                                 break;
-                            }
                             case CONNECT:
-                            {
-                                string info = "You are already in the chat room.\n";
-                                send(i, info.c_str(), info.size(), 0);
+                                serverObject.sendMessage(i, "You are already in the chat room.\n");
                                 break;
-                            }
                             }
                         }
                     }
@@ -431,6 +503,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    close(serverSock);
+    serverObject.closeServer(serverObject.sockfd);
     return 0;
 }
