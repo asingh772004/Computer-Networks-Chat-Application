@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
     pthread_t readThread, writeThread;
     pthread_create(&readThread, NULL, readHandler, NULL);
     pthread_create(&writeThread, NULL, writeHandler, NULL);
+    pthread_detach(writeThread);
     pthread_join(readThread, NULL);
     pthread_cancel(writeThread);
 
