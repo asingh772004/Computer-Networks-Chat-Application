@@ -28,7 +28,7 @@ This is a multi-client chat application implemented in C++ using a server-client
 #### Private Messaging:
 * Prefix a message with @username to send a private message to one or more specific users. If the recipient is not found, the sender receives a notification.
 
-#### DISCONNECT AND EXIT:
+#### DISCONNECT and EXIT:
 * Commands to leave the chat room or close the connection respectively
 
 #### Customized terminal:
@@ -49,6 +49,8 @@ This is a multi-client chat application implemented in C++ using a server-client
 * pthreads for multithreading
 * ncurses library for customized terminal
 * ANSI escape sequences for colored terminal output
+
+<br>
 
 ## Compilation
 
