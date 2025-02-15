@@ -37,13 +37,13 @@ This is a multi-client chat application implemented in C++ using a server-client
 #### Run the server with a specified port number:
 ```./server <port_number>```
 #### Example:
-```./server 8080```
+```./server 4761```
 
 ### Connecting clients
 #### Run the client and specify the server IP and port:
 ```./client <server_ip> <port_number>```
 #### Example:
-```./client 127.0.0.1 8080```
+```./client 127.0.0.1 4761```
 
 ### Commands
 |Command|Description|
