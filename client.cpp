@@ -65,29 +65,43 @@ public:
     {
         string input;
         int ch;
-        while ((ch = wgetch(inputWin)) != '\n')
+        int max_width = COLS - 4; // Account for box borders and some padding
+
+        while (true)
         {
+            ch = wgetch(inputWin);
+
+            if (ch == '\n')
+                break;
+
             if (ch == KEY_BACKSPACE || ch == 127)
             {
                 if (!input.empty())
-                {
                     input.pop_back();
-                    int y, x;
-                    getyx(inputWin, y, x);
-                    mvwaddch(inputWin, y, x - 1, ' ');
-                    wmove(inputWin, y, x - 1);
-                }
             }
-            else
+            else if (ch != ERR && input.length() < max_width)
             {
                 input += ch;
-                waddch(inputWin, ch);
             }
+
+            // Clear input window and redraw box
+            wclear(inputWin);
+            box(inputWin, 0, 0);
+
+            // Calculate the center position for the input text
+            int center_x = (COLS - input.length()) / 2;
+            mvwprintw(inputWin, 1, center_x, input.c_str());
             wrefresh(inputWin);
         }
+
+        // Clear input window and redraw box
         wclear(inputWin);
         box(inputWin, 0, 0);
         wrefresh(inputWin);
+
+        // Display input in chat window
+        consoleStatement("You: " + input);
+
         return input;
     }
 } terminalObject;
