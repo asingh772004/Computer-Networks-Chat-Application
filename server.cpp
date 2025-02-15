@@ -1,12 +1,22 @@
-#include <bits/stdc++.h>
-#include <iostream>
-#include <cstring>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <vector>
-#include <algorithm>
+// Standard C++ Libraries
+#include <iostream>  // For standard I/O operations
+#include <vector>    // For std::vector (if needed)
+#include <map>       // For std::map
+#include <algorithm> // For std::find, std::remove, etc. (if needed)
+#include <cstring>   // For memset(), strcpy(), etc.
+
+// POSIX & System Libraries
+#include <unistd.h> // For close(), read(), write(), etc.
+#include <fcntl.h>  // For fcntl() (optional, for non-blocking sockets)
+#include <csignal>  // For handling signals (optional, if used)
+
+// Networking Libraries
+#include <sys/socket.h> // For socket functions (socket(), bind(), listen(), accept(), etc.)
+#include <netinet/in.h> // For sockaddr_in structure
+#include <netdb.h>      // For getaddrinfo(), gethostbyname(), etc.
+
+// Threading Library
+#include <pthread.h> // For pthreads (multithreading)
 
 using namespace std;
 
@@ -16,7 +26,7 @@ using namespace std;
 
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 256
-#define BUFFER_BYTES 256
+#define BUFFER_BYTES 8 * BUFFER_SIZE
 
 typedef enum msgType
 {
@@ -59,6 +69,8 @@ public:
         }
         else
             cout << "Client Socket was successfully created." << endl;
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
     }
 
     void socketBind()
@@ -99,7 +111,11 @@ public:
             exit(0);
         }
         else
+        {
             printf("server-client connection established. !!\n");
+            int flags = fcntl(connfd, F_GETFL, 0);
+            fcntl(connfd, F_SETFL, flags | O_NONBLOCK);
+        }
     }
 
     void closeServer(int clientSocket)
