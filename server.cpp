@@ -187,8 +187,6 @@ public:
                     continue; // Interrupted by signal, retry
                 return -1;    // Error occurred
             }
-            cout << YELLOW << "\tBytes Sent: " << result << RESET << endl;
-            cout << YELLOW << "\tMessage Sent: " << buffer + bytesSent << RESET << endl;
             bytesSent += result;
         }
 
@@ -530,6 +528,7 @@ int main(int argc, char *argv[])
     }
     cout << string(50, '-') << endl;
     pthread_t clientThread;
+    ssize_t nSend;
     while (true)
     {
         serverObject.acceptClient();
@@ -541,6 +540,7 @@ int main(int argc, char *argv[])
         if (clientCount >= 5)
         {
             cout << RED << "Maximum Number of Clients Reached" << RESET << endl;
+            nSend = serverObject.sendMessage(serverObject.connfd, "EXIT Processed");
             pthread_mutex_unlock(&clientCountMutex);
             continue;
         }
