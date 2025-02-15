@@ -42,7 +42,7 @@ Run the client and specify the server IP and port:
 Example:
 ```./client 127.0.0.1 8080```
 
-##Commands
+### Commands
 |Command|Description|
 |---|---|
 |CONNECT|Connects the user to the chatroom|
