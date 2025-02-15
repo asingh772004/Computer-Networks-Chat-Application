@@ -477,8 +477,11 @@ void *handleClient(void *socketDescription)
         if (message.substr(0, 7) == "CONNECT")
         {
             pthread_mutex_lock(&chatRoomMutex);
-            message = getAllInChat();
-            sentByteSize = serverObject.sendMessage(socketNumber, message);
+            if (chatRoom.size() > 0)
+            {
+                message = getAllInChat();
+                sentByteSize = serverObject.sendMessage(socketNumber, message);
+            }
             chatRoom[clientList[socketNumber]] = socketNumber;
             isEXIT = chatting(socketNumber, buffer);
             chatRoom.erase(clientList[socketNumber]);
