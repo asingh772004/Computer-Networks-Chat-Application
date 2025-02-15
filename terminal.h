@@ -129,7 +129,7 @@ public:
                 }
                 continue;
             }
-            else if (ch == KEY_LEFT || ch == KEY_RIGHT || ch==KEY_HOME || ch==KEY_END || ch==KEY_INSERT || ch==KEY_DELETE)
+            else if (ch == KEY_LEFT || ch == KEY_RIGHT || ch==KEY_HOME || ch==KEY_END || ch==KEY_IC || ch==KEY_DC)
             {
                 // Ignore left and right arrow keys
                 continue;
