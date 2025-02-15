@@ -7,7 +7,6 @@
 
 // POSIX & System Libraries
 #include <unistd.h> // For close(), read(), write(), etc.
-#include <fcntl.h>  // For fcntl() (optional, for non-blocking sockets)
 #include <csignal>  // For handling signals (optional, if used)
 
 // Networking Libraries
@@ -57,13 +56,13 @@ public:
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0)
         {
-            cout << "Client Socket Creation Failed.Exiting..." << endl;
+            cout << RED << "Socket Creation Failed" << RESET << endl;
             exit(0);
         }
         else
-            cout << "Client Socket was successfully created." << endl;
-        int flags = fcntl(sockfd, F_GETFL, 0);
-        fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+        {
+            cout << GREEN << "Socket was successfully created." << RESET << endl;
+        }
     }
 
     void socketBind()
@@ -75,11 +74,11 @@ public:
         bindid = bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         if (bindid < 0)
         {
-            cout << "Server socket bind failed." << endl;
+            cout << RED << "Server socket bind failed." << RESET << endl;
             exit(0);
         }
         else
-            cout << "Server binded successfully." << endl;
+            cout << GREEN << "Server binded successfully." << RESET << endl;
     }
 
     void serverListen()
@@ -87,11 +86,11 @@ public:
         listenid = listen(sockfd, 20);
         if (listenid != 0)
         {
-            cout << "server listen failed." << endl;
+            cout << RED << "Server listen failed" << RESET << endl;
             exit(0);
         }
         else
-            cout << "server is listening." << endl;
+            cout << GREEN << "Server is listening" << RESET << endl;
     }
 
     void acceptClient()
@@ -100,14 +99,12 @@ public:
         connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
         if (connfd < 0)
         {
-            printf("server accept failed...\n");
+            cout << RED << "Server accept failed" << RESET << endl;
             exit(0);
         }
         else
         {
-            printf("server-client connection established. !!\n");
-            int flags = fcntl(connfd, F_GETFL, 0);
-            fcntl(connfd, F_SETFL, flags | O_NONBLOCK);
+            cout << GREEN << "Server-Client Connection Established" << RESET << endl;
         }
     }
 
