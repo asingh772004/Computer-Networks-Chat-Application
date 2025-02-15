@@ -4,7 +4,7 @@ Overview
 
 This is a multi-client chat application implemented in C++ using a server-client model. The server supports multiple clients and allows broadcasting, private messaging, and client management features using POSIX sockets and multithreading.
 
-Features
+##Features
 
 * Multi-client support (up to 5 clients at a time)
 * Private messaging using @username prefix
@@ -13,9 +13,17 @@ Features
 * Connection and disconnection notifications
 * Threaded client handling for scalability
 
-  Technologies Used
+##Technologies Used
 
 * C++ (Standard Library, POSIX APIs)
 * Sockets (TCP/IP)
 * pthreads for multithreading
 * ANSI escape sequences for colored terminal output
+
+#Compilation
+
+##Compile the server
+```g++ -o server server.cpp -lpthread```
+
+## Compile the client
+```g++ -o client client.cpp -lpthread -lncurses```
