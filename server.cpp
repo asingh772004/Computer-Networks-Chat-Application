@@ -406,7 +406,7 @@ void *handleClient(void *socketDescription)
         }
 
         cout << YELLOW << clientList[socketNumber] << ": " << message << RESET << endl;
-        sentByteSize = serverObject.sendMessage(socketNumber, "Recieved Message");
+        sentByteSize = serverObject.sendMessage(socketNumber, "You are not in Chat Room, Type CONNECT");
 
         if (message.substr(0, 7) == "CONNECT")
         {
