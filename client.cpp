@@ -46,7 +46,7 @@ public:
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0)
         {
-            error("ERROR opening socket");
+            cout << RED << "Could not open Socket" << RESET << endl;
             exit(0);
         }
     }
@@ -56,7 +56,7 @@ public:
         server = gethostbyname(argv[1]);
         if (server == NULL)
         {
-            fprintf(stderr, "ERROR, no such host\n");
+            cout << RED << "Could not get Server" << RESET << endl;
             exit(0);
         }
     }
@@ -73,7 +73,7 @@ public:
     {
         if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
         {
-            error("ERROR connecting");
+            cout << RED << "Could not connect to Server" << RESET << endl;
             exit(0);
         }
     }
