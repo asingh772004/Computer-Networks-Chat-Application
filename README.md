@@ -97,17 +97,25 @@ This is a multi-client chat application implemented in C++ using a server-client
 
 ## SAMPLE IMAGES
 
+<br>
+<br>
 #### server side
 ![serverImage](https://github.com/user-attachments/assets/cb52b6ce-da31-4757-b52d-a01b7053218b)
 
+<br>
+<br>
 #### client 1
 ![client1Image](https://github.com/user-attachments/assets/55430f41-2ee3-4481-b907-0fbe623e1611)
 
+<br>
+<br>
 #### client 2
 ![client1Image](https://github.com/user-attachments/assets/25dccb81-9ef9-4c26-954a-0935a93bb95d)
-
+<br>
+<br>
 #### client 3
-![client1Image](https://github.com/user-attachments/assets/5c19fafb-c4ad-4969-a1aa-3e121393f221)
+![client3Image](https://github.com/user-attachments/assets/433fe844-e4a3-4dc3-9a2f-3b461a1deac1)
+
 
 
 
