@@ -171,7 +171,7 @@ string msgParser(msgType command, string message, int sockSender)
         break;
 
     case BROADCAST:
-        msg += "[" + username + " is Broadcasting] ";
+        msg += "[" + username + ", to ALL] ";
         msg += message;
         break;
     }
@@ -220,26 +220,22 @@ msgType commandHandler(string &message, int sockSender, vector<int> &privateSock
 
     if (message[0] == '@')
     {
-        // cout<<CYAN << "\tPrivate Detected" <<RESET<< endl;
         command = PRIVATE;
         privateMsgParser(message, privateSocketNo, privateAliasNotFound);
         return command;
     }
     else if (message.size() >= 7 && message.substr(0, 7) == "CONNECT")
     {
-        // cout <<CYAN<< "\tConnect Detected" << RESET<<endl;
         command = CONNECT;
         return command;
     }
     else if (message.size() >= 10 && message.substr(0, 10) == "DISCONNECT")
     {
-        // cout <<CYAN<< "\tDisconnect Detected" <<RESET<< endl;
         command = DISCONNECT;
         return command;
     }
     else if (message.size() >= 4 && message.substr(0, 4) == "EXIT")
     {
-        // cout << "\tEXIT DETECTED " << endl;
         command = EXIT;
         return command;
     }
